@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://vscodeedu.com/assets/schema/course-v2.schema.json
+id: lessonpart9
+title: The Winner's Circle
+content: |
+  Huzzah man you did it!
+showEditor: true
+editors:
+  - course1/unit1/lesson1/lessonpart9/failed.md

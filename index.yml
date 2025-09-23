@@ -1,0 +1,6076 @@
+# yaml-language-server: $schema=https://vscodeedu.com/assets/schema/course-v2.schema.json
+id: course1
+title: The Slither Slam (Beta)
+level: beginner
+cardImageUrl: https://vscodeedu.com/assets/course-cards/card6.png
+contacts:
+  - displayName: Ben Villalobos
+    pictureUrl: https://avatars.githubusercontent.com/u/4691428?v=4
+    homePageUrl: https://github.com/benvillalobos
+systemPrompts:
+  - id: "1"
+    displayName: System Prompt
+    prompt: >-
+      **Role**
+
+      - You are an educator. Convert student's strategy  EXACTLY AS DESCRIBED
+      into valid JavaScript using only the provided API.
+
+      - NEVER add more code than is exactly described in the prompt.
+
+      - Use only the API described in the following code blocks:
+
+      ```javascript
+
+      // The output code MUST DEFINE a `playerAI` method that RETURNS a
+      direction object
+
+      function playerAI(player) {
+        // Prefer creating a direction variable early on, modifying it as needed, and returning it at the end of the function.
+        // To set the snake's direction, return the direction object
+        return Direction.UP; // Options: UP,DOWN,LEFT,RIGHT
+
+        // === NAVIGATION HELPERS ===
+        // Get smart direction towards any coordinate {x, y}
+        const dirToTarget = player.towards({x: 10, y: 5});
+        const closestFood = player.getClosestFood(); // food or poison depending on game configuration
+        const dirToClosestFood = player.towardsClosestFood();
+        const dirToEnemy = player.towardsEnemy(); // towards enemy head
+        const dirAwayFromEnemy = player.awayFromEnemy();
+        const safeDir = player.randomSafeDirection();
+
+        // COLLISION DETECTION
+        // Check if direction object leads to a collision, which results in a round loss. Player can collide with walls, itself, enemy, or poison. willHitAnything is a catch all that can be used when requested.
+        const willHitWall = player.willHitWall|willHitSelf|willHitEnemy|willHitPoison|willHitAnything|isPredictablySafe(Direction.UP);
+        
+        // SPATIAL AWARENESS
+        // All distances are Manhattan distance with x,y coordinates
+        const distanceToTarget = player.distanceTo({x: 10, y: 5});
+        const distanceToEnemy = player.distanceToEnemy(); // enemy head
+        const distanceToWall = player.distanceToWall(Direction.UP);
+
+        // STATE INFORMATION
+        const head = player.head(); // {x, y}
+        const bodySegments = player.body; // [{x, y}, ...] head is index 0
+        const snakeSize = player.size(); // length of snake
+        const isAlive = player.alive;
+        const currentDir = player.currentDirection(); // {x, y}
+
+        // GAME STATE ACCESS
+        const allFoods = game.foods; // [{x, y} ...] (includes food and poison)
+        const food = game.food; // {x, y} equivalent to foods[0] (may be poison)
+        
+        // EXAMPLE: Checking for the closest non-poison food (only include if the user specifically requests handling poison)
+        let closestFood = null;
+        let minDistance = Infinity;
+
+        for (const foodItem of allFoods) {
+          if (foodItem.type !== 'poison') {
+            const distance = player.distanceTo(foodItem);
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestFood = foodItem;
+            }
+          }
+        }
+
+        // Access grid configuration
+        const gridCols = game.GRID.cols;      // Grid width (20)
+        const gridRows = game.GRID.rows;      // Grid height (20)
+        const cellSize = game.GRID.cell;      // Cell size in pixels (20)
+        const gridCenter = game.GRID.center;
+
+        // === ENEMY INFORMATION ===
+        // All player methods work on enemy too
+        //Access enemy snake object (has same API as player)
+        const enemy = game.enemy;
+        const enemySize = game.enemy.size();
+        const enemyDistanceToFood = game.enemy.distanceTo(enemyClosestFood);
+        const enemyCurrentDir = game.enemy.currentDirection();
+      }
+
+      // DO NOT export anything using `module.exports`, it is not necessary.
+
+      ```
+
+
+      **Code Output Rules**
+
+      - ALWAYS output code EXACTLY as described, no extra logic
+
+      - Never explain the code. Output **only code**, properly formatted in a
+      fenced ```javascript block.  
+
+      - The code must be complete and runnable as-is in `player-ai.js`
+
+      - Do not include any extra commentary or markdown outside the code block
+
+      - Always return a direction object at the end of the function
+
+      - Avoid early returns and null checks
+
+      - Ensure code has comments explaining the logic based on what the user's
+      input was
+
+      - Only check for poison food if the user specifically requests it
+files:
+  - path: course1/player-ai.js
+    content: "function playerAI(enemy) {\r
+
+      \    return Direction.RIGHT;\r
+
+      }\r
+
+      \r\n"
+  - path: course1/snake.js
+    content: "class Snake {\r
+
+      \  /**\r
+
+      \   * @param {object} opts\r
+
+      \   *  - id: string\r
+
+      \   *  - start: {x,y}\r
+
+      \   *  - color: string\r
+
+      \   *  - stepMs: number (default 200)\r
+
+      \   *  - size: number (default 1) - initial snake length\r
+
+      \   *  - direction: {x, y} (default {x: 1, y: 0}) - initial movement
+      direction\r
+
+      \   */\r
+
+      \  constructor({ id, start, color = '#22c55e', stepMs = 200, size = 1,
+      direction = { x: 1, y: 0 } }) {\r
+
+      \    this.id = id;\r
+
+      \    this.color = color;\r
+
+      \    this.stepMs = stepMs;\r
+
+      \    this.body = [ { x: start.x, y: start.y } ];\r
+
+      \    this.dir = { x: direction.x, y: direction.y };\r
+
+      \    this.nextDir = { x: direction.x, y: direction.y }; // buffered
+      direction (from input / AI)\r
+
+      \    this.growBy = 0;\r
+
+      \    this.alive = true;\r
+
+      \    this.deathCause = null;\r
+
+      \    this._lastMove = 0;\r
+
+      \r
+
+      \    // Add initial body segments based on size parameter\r
+
+      \    this._initializeBody(size, direction);\r
+
+      \  }\r
+
+      \r
+
+      \  head() { return this.body[0]; }\r
+
+      \r
+
+      \  // Initialize body with clockwise turning when hitting boundaries\r
+
+      \  _initializeBody(size, direction) {\r
+
+      \    if (size <= 1) return;\r
+
+      \    \r
+
+      \    const { GRID } = game;\r
+
+      \    \r
+
+      \    // Start with opposite direction from movement\r
+
+      \    let currentDir = { x: -direction.x, y: -direction.y };\r
+
+      \    let currentX = this.body[0].x;\r
+
+      \    let currentY = this.body[0].y;\r
+
+      \    \r
+
+      \    for (let i = 1; i < size; i++) {\r
+
+      \      let nextX = currentX + currentDir.x;\r
+
+      \      let nextY = currentY + currentDir.y;\r
+
+      \      \r
+
+      \      // Check if next position would be out of bounds\r
+
+      \      let needsTurn = false;\r
+
+      \      if (nextX < 0 || nextX >= GRID.cols || nextY < 0 || nextY >=
+      GRID.rows) {\r
+
+      \        needsTurn = true;\r
+
+      \      }\r
+
+      \      \r
+
+      \      // Check if next position would collide with existing body parts\r
+
+      \      if (!needsTurn) {\r
+
+      \        needsTurn = this.body.some(segment => segment.x === nextX &&
+      segment.y === nextY);\r
+
+      \      }\r
+
+      \      \r
+
+      \      // If we need to turn, rotate clockwise and try again\r
+
+      \      if (needsTurn) {\r
+
+      \        currentDir = this._turnClockwise(currentDir);\r
+
+      \        nextX = currentX + currentDir.x;\r
+
+      \        nextY = currentY + currentDir.y;\r
+
+      \        \r
+
+      \        // If still out of bounds after turning, try turning again (up to
+      4 times)\r
+
+      \        let turnAttempts = 0;\r
+
+      \        while ((nextX < 0 || nextX >= GRID.cols || nextY < 0 || nextY >=
+      GRID.rows || \r
+
+      \                this.body.some(segment => segment.x === nextX &&
+      segment.y === nextY)) && \r
+
+      \               turnAttempts < 3) {\r
+
+      \          currentDir = this._turnClockwise(currentDir);\r
+
+      \          nextX = currentX + currentDir.x;\r
+
+      \          nextY = currentY + currentDir.y;\r
+
+      \          turnAttempts++;\r
+
+      \        }\r
+
+      \        \r
+
+      \        // If we've exceeded turn attempts, just use whatever nextX/nextY
+      we have\r
+
+      \      }\r
+
+      \      \r
+
+      \      if (nextX < 0 || nextX >= GRID.cols || nextY < 0 || nextY >=
+      GRID.rows ||\r
+
+      \          this.body.some(segment => segment.x === nextX && segment.y ===
+      nextY)) {\r
+
+      \        break; // Stop generating body segments\r
+
+      \      }\r
+
+      \      \r
+
+      \      this.body.push({ x: nextX, y: nextY });\r
+
+      \      currentX = nextX;\r
+
+      \      currentY = nextY;\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  // Helper method to turn direction clockwise\r
+
+      \  _turnClockwise(direction) {\r
+
+      \    if (direction.x === 1 && direction.y === 0) return { x: 0, y: 1
+      };   // right -> down\r
+
+      \    if (direction.x === 0 && direction.y === 1) return { x: -1, y: 0
+      };  // down -> left  \r
+
+      \    if (direction.x === -1 && direction.y === 0) return { x: 0, y: -1 };
+      // left -> up\r
+
+      \    if (direction.x === 0 && direction.y === -1) return { x: 1, y: 0
+      };  // up -> right\r
+
+      \    return direction;\r
+
+      \  }\r
+
+      \r
+
+      \  setDirection(d) {\r
+
+      \    // Prevent reversing into itself (cannot go directly opposite)\r
+
+      \    if (this.body.length > 1) {\r
+
+      \      const opposite = (this.dir.x === -d.x && this.dir.y === -d.y);\r
+
+      \      if (opposite) return; // ignore illegal reversal\r
+
+      \    }\r
+
+      \    this.nextDir = { x: d.x, y: d.y };\r
+
+      \  }\r
+
+      \r
+
+      \  /** Move one cell if stepMs elapsed; return {moved, ateFood, eatenFood,
+      newHead} */\r
+
+      \  moveIfReady(nowMs, game) {\r
+
+      \    if (!this.alive) return { moved: false, ateFood: false, eatenFood:
+      null, newHead: null };\r
+
+      \    if (nowMs - this._lastMove < this.stepMs) return { moved: false,
+      ateFood: false, eatenFood: null, newHead: null };\r
+
+      \r
+
+      \    const { foods } = game;\r
+
+      \r
+
+      \    // Apply buffered direction at tick time\r
+
+      \    this.dir = { ...this.nextDir };\r
+
+      \r
+
+      \    const next = { x: this.head().x + this.dir.x, y: this.head().y +
+      this.dir.y };\r
+
+      \r
+
+      \    // Advance head\r
+
+      \    this.body.unshift(next);\r
+
+      \r
+
+      \    // Food?\r
+
+      \    let ateFood = false;\r
+
+      \    let eatenFood = null;\r
+
+      \    let atePoison = false;\r
+
+      \    if (foods) {\r
+
+      \      for (const food of foods) {\r
+
+      \        if (next.x === food.x && next.y === food.y) {\r
+
+      \          ateFood = true;\r
+
+      \          eatenFood = food;\r
+
+      \          // Handle different food types\r
+
+      \          if (food.type === 'poison') {\r
+
+      \            atePoison = true;\r
+
+      \            // Poison immediately kills the snake\r
+
+      \            this.alive = false;\r
+
+      \            this.deathCause = 'poison';\r
+
+      \          } else {\r
+
+      \            // Regular food grows the snake\r
+
+      \            this.growBy += 1;\r
+
+      \          }\r
+
+      \          break;\r
+
+      \        }\r
+
+      \      }\r
+
+      \    }\r
+
+      \r
+
+      \    // Trim tail unless growing\r
+
+      \    if (this.growBy > 0) {\r
+
+      \      this.growBy -= 1;\r
+
+      \    } else {\r
+
+      \      this.body.pop();\r
+
+      \    }\r
+
+      \r
+
+      \    this._lastMove = nowMs;\r
+
+      \    return { moved: true, ateFood, eatenFood, atePoison, newHead: next
+      };\r
+
+      \  }\r
+
+      \r
+
+      \  draw(p, cellSize) {\r
+
+      \    p.push();\r
+
+      \    p.noStroke();\r
+
+      \    p.fill(this.color);\r
+
+      \    for (let i = 0; i < this.body.length; i++) {\r
+
+      \      const b = this.body[i];\r
+
+      \      const r = i === 0 ? 6 : 3; // roundness hint: bigger on head\r
+
+      \      p.rect(b.x * cellSize, b.y * cellSize, cellSize, cellSize, r);\r
+
+      \    }\r
+
+      \    p.pop();\r
+
+      \  }\r
+
+      \r
+
+      \  /** Helper to get next cell for a given direction */\r
+
+      \  _getNextCell(direction) {\r
+
+      \    if (!direction) direction = this.nextDir;\r
+
+      \    return { x: this.head().x + direction.x, y: this.head().y +
+      direction.y };\r
+
+      \  }\r
+
+      \r
+
+      towards(target) {\r
+
+      \  const head = this.head();\r
+
+      \  const dx = target.x - head.x;\r
+
+      \  const dy = target.y - head.y;\r
+
+      \  \r
+
+      \  if (dx === 0 && dy === 0) {\r
+
+      \    return this.currentDirection();\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Calculate the direct path direction\r
+
+      \  let directDirection;\r
+
+      \  if (Math.abs(dx) > Math.abs(dy)) {\r
+
+      \    directDirection = { x: Math.sign(dx), y: 0 };\r
+
+      \  } else {\r
+
+      \    directDirection = { x: 0, y: Math.sign(dy) };\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Check if this would be a backward movement\r
+
+      \  const currentDir = this.currentDirection();\r
+
+      \  const isBackward = (currentDir.x === -directDirection.x && currentDir.y
+      === -directDirection.y);\r
+
+      \  \r
+
+      \  // If direct path is not backward and is safe, use it\r
+
+      \  if (!isBackward || this.body.length <= 1) {\r
+
+      \    if (!this.willHitAnything(directDirection)) {\r
+
+      \      return directDirection;\r
+
+      \    }\r
+
+      \  }\r
+
+      \  \r
+
+      \  // If going directly would be backward or unsafe, find the best turning
+      direction\r
+
+      \  // We need to turn either left or right relative to our current
+      direction\r
+
+      \  const leftDir = this._turnLeft(currentDir);\r
+
+      \  const rightDir = this._turnRight(currentDir);\r
+
+      \  \r
+
+      \  // Calculate which turn gets us closer to the target faster\r
+
+      \  const leftNextPos = { x: head.x + leftDir.x, y: head.y + leftDir.y };\r
+
+      \  const rightNextPos = { x: head.x + rightDir.x, y: head.y + rightDir.y
+      };\r
+
+      \  \r
+
+      \  const leftDistance = Math.abs(leftNextPos.x - target.x) +
+      Math.abs(leftNextPos.y - target.y);\r
+
+      \  const rightDistance = Math.abs(rightNextPos.x - target.x) +
+      Math.abs(rightNextPos.y - target.y);\r
+
+      \  \r
+
+      \  // Determine which direction is closer\r
+
+      \  const fasterDir = leftDistance <= rightDistance ? leftDir : rightDir;\r
+
+      \  const slowerDir = leftDistance <= rightDistance ? rightDir : leftDir;\r
+
+      \  \r
+
+      \  // Check if the faster direction is safe\r
+
+      \  if (!this.willHitAnything(fasterDir)) {\r
+
+      \    return fasterDir;\r
+
+      \  }\r
+
+      \  \r
+
+      \  // If faster direction is not safe, try the slower direction\r
+
+      \  if (!this.willHitAnything(slowerDir)) {\r
+
+      \    return slowerDir;\r
+
+      \  }\r
+
+      \  \r
+
+      \  // If both directions are unsafe, return the current direction as
+      fallback\r
+
+      \  return this.currentDirection();\r
+
+      }\r
+
+      \r
+
+      \  getClosestFood() {\r
+
+      \    // If there are no foods, fallback to the food object for backward
+      compatibility\r
+
+      \    if (!game.foods || game.foods.length === 0) {\r
+
+      \      return game.food;\r
+
+      \    }\r
+
+      \r
+
+      \    let closestFood = game.foods[0];\r
+
+      \    let minDistance = this.distanceTo(closestFood);\r
+
+      \r
+
+      \    for (let i = 1; i < game.foods.length; i++) {\r
+
+      \      const food = game.foods[i];\r
+
+      \      const distance = this.distanceTo(food);\r
+
+      \      if (distance < minDistance) {\r
+
+      \        minDistance = distance;\r
+
+      \        closestFood = food;\r
+
+      \      }\r
+
+      \    }\r
+
+      \r
+
+      \    return closestFood;\r
+
+      \  }\r
+
+      \r
+
+      \  towardsClosestFood() {\r
+
+      \    const targetFood = this.getClosestFood();\r
+
+      \    return this.towards(targetFood);\r
+
+      \  }\r
+
+      \r
+
+      \  towardsEnemy() {\r
+
+      \    // Dynamically determine the enemy based on this snake's ID\r
+
+      \    const otherSnake = this.id === PLAYER_CONFIG.id ? game.enemy :
+      game.player;\r
+
+      \    if (!otherSnake?.alive) {\r
+
+      \      // If enemy isn't alive, return a random safe direction\r
+
+      \      return this.randomSafeDirection();\r
+
+      \    }\r
+
+      \    return this.towards(otherSnake.head());\r
+
+      \  }\r
+
+      \r
+
+      \  awayFromEnemy() {\r
+
+      \    // Dynamically determine the enemy based on this snake's ID\r
+
+      \    const otherSnake = this.id === PLAYER_CONFIG.id ? game.enemy :
+      game.player;\r
+
+      \    if (!otherSnake?.alive) {\r
+
+      \      // If enemy isn't alive, return current direction\r
+
+      \      return this.currentDirection();\r
+
+      \    }\r
+
+      \    const dir = this.towards(otherSnake.head());\r
+
+      \    return { x: -dir.x, y: -dir.y }; // reverse direction\r
+
+      \  }\r
+
+      \r
+
+      \  randomSafeDirection() {\r
+
+      \    const directions = [Direction.UP, Direction.DOWN, Direction.LEFT,
+      Direction.RIGHT];\r
+
+      \    const safeDirections = directions.filter(d =>
+      this.isPredictablySafe(d));\r
+
+      \    if (safeDirections.length > 0) {\r
+
+      \      return safeDirections[Math.floor(Math.random() *
+      safeDirections.length)];\r
+
+      \    }\r
+
+      \    return this.currentDirection(); // No safe moves, continue straight\r
+
+      \  }\r
+
+      \r
+
+      \  // Helper method to turn left relative to current direction\r
+
+      \  _turnLeft(direction) {\r
+
+      \    if (direction.x === 1 && direction.y === 0) return { x: 0, y: -1 };
+      // right -> up\r
+
+      \    if (direction.x === 0 && direction.y === -1) return { x: -1, y: 0 };
+      // up -> left\r
+
+      \    if (direction.x === -1 && direction.y === 0) return { x: 0, y: 1 };
+      // left -> down\r
+
+      \    if (direction.x === 0 && direction.y === 1) return { x: 1, y: 0 }; //
+      down -> right\r
+
+      \    return direction; // fallback\r
+
+      \  }\r
+
+      \r
+
+      \  // Helper method to turn right relative to current direction\r
+
+      \  _turnRight(direction) {\r
+
+      \    if (direction.x === 1 && direction.y === 0) return { x: 0, y: 1 }; //
+      right -> down\r
+
+      \    if (direction.x === 0 && direction.y === 1) return { x: -1, y: 0 };
+      // down -> left\r
+
+      \    if (direction.x === -1 && direction.y === 0) return { x: 0, y: -1 };
+      // left -> up\r
+
+      \    if (direction.x === 0 && direction.y === -1) return { x: 1, y: 0 };
+      // up -> right\r
+
+      \    return direction; // fallback\r
+
+      \  }\r
+
+      \r
+
+      \  // New helper method for more thorough safety checking\r
+
+      \  isPredictablySafe(direction) {\r
+
+      \    // First do basic collision checks\r
+
+      \    if (this.willHitAnything(direction)) {\r
+
+      \      return false;\r
+
+      \    }\r
+
+      \    \r
+
+      \    // Get where we would be after this move\r
+
+      \    const myNextPos = this._getNextCell(direction);\r
+
+      \    \r
+
+      \    // Get the other snake and predict where it will be\r
+
+      \    const otherSnake = this.id === PLAYER_CONFIG.id ? game.enemy :
+      game.player;\r
+
+      \    if (otherSnake?.alive) {\r
+
+      \      // Predict enemy's next position based on their current direction\r
+
+      \      const enemyCurrentDir = otherSnake.currentDirection();\r
+
+      \      const enemyHead = otherSnake.head();\r
+
+      \      const enemyNextPos = {\r
+
+      \        x: enemyHead.x + enemyCurrentDir.x,\r
+
+      \        y: enemyHead.y + enemyCurrentDir.y\r
+
+      \      };\r
+
+      \      \r
+
+      \      // Check if we would collide with enemy's predicted position\r
+
+      \      if (myNextPos.x === enemyNextPos.x && myNextPos.y ===
+      enemyNextPos.y) {\r
+
+      \        return false; // Head-to-head collision predicted\r
+
+      \      }\r
+
+      \      \r
+
+      \      // Also check if enemy's predicted body (after it moves) would
+      block us\r
+
+      \      // Enemy's body after moving will be: [enemyNextPos,
+      ...otherSnake.body.slice(0, -1)]\r
+
+      \      // (unless enemy eats food, but we can't predict that reliably)\r
+
+      \      const enemyFutureBody = [enemyNextPos, ...otherSnake.body.slice(0,
+      -1)];\r
+
+      \      if (enemyFutureBody.some(segment => segment.x === myNextPos.x &&
+      segment.y === myNextPos.y)) {\r
+
+      \        return false;\r
+
+      \      }\r
+
+      \    }\r
+
+      \    \r
+
+      \    return true;\r
+
+      \  }\r
+
+      \r
+
+      \  // --- Checks ---\r
+
+      \  willHitWall(direction) {\r
+
+      \    const { GRID } = game;\r
+
+      \    const next = this._getNextCell(direction);\r
+
+      \    return next.x < 0 || next.y < 0 || next.x >= GRID.cols || next.y >=
+      GRID.rows;\r
+
+      \  }\r
+
+      \r
+
+      \  willHitSelf(direction) {\r
+
+      \    const next = this._getNextCell(direction);\r
+
+      \    // The tail will move, so we don't check collision with the very last
+      segment.\r
+
+      \    return this.body.slice(0, -1).some(c => c.x === next.x && c.y ===
+      next.y);\r
+
+      \  }\r
+
+      \r
+
+      \  willHitEnemy(direction) {\r
+
+      \    const otherSnake = this.id === PLAYER_CONFIG.id ? game.enemy :
+      game.player;\r
+
+      \    if (!otherSnake?.alive) return false;\r
+
+      \    const next = this._getNextCell(direction);\r
+
+      \    return otherSnake.body.some(c => c.x === next.x && c.y === next.y);\r
+
+      \  }\r
+
+      \  \r
+
+      \  willHitPoisonFood(direction) {\r
+
+      \    if (!game.foods || game.foods.length === 0) return false;\r
+
+      \    const next = this._getNextCell(direction);\r
+
+      \    return game.foods.some(food => food.type === 'poison' && food.x ===
+      next.x && food.y === next.y);\r
+
+      \  }\r
+
+      \r
+
+      \  willHitAnything(direction) {\r
+
+      \    // Prevent reversing into itself\r
+
+      \    if (this.body.length > 1) {\r
+
+      \      const opposite = (this.dir.x === -direction.x && this.dir.y ===
+      -direction.y);\r
+
+      \      if (opposite) return true;\r
+
+      \    }\r
+
+      \    return this.willHitWall(direction) ||\r
+
+      \           this.willHitSelf(direction) ||\r
+
+      \           this.willHitEnemy(direction) ||\r
+
+      \           this.willHitPoisonFood(direction);\r
+
+      \  }\r
+
+      \r
+
+      \  // --- Spacial Awareness ---\r
+
+      \  distanceTo(target) {\r
+
+      \    const head = this.head();\r
+
+      \    return Math.abs(head.x - target.x) + Math.abs(head.y - target.y);\r
+
+      \  }\r
+
+      \  \r
+
+      \  distanceToEnemy() {\r
+
+      \    const otherSnake = this.id === PLAYER_CONFIG.id ? game.enemy :
+      game.player;\r
+
+      \    if (!otherSnake?.alive) return Infinity;\r
+
+      \    return this.distanceTo(otherSnake.head());\r
+
+      \  }\r
+
+      \r
+
+      \  distanceToWall(direction) {\r
+
+      \    const { GRID } = game;\r
+
+      \    const head = this.head();\r
+
+      \    if (direction.x === 1) return GRID.cols - 1 - head.x;\r
+
+      \    if (direction.x === -1) return head.x;\r
+
+      \    if (direction.y === 1) return GRID.rows - 1 - head.y;\r
+
+      \    if (direction.y === -1) return head.y;\r
+
+      \    return Infinity;\r
+
+      \  }\r
+
+      \r
+
+      \  // --- Getters ---\r
+
+      \  currentDirection() { return this.dir; }\r
+
+      \  size() { return this.body.length; }\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart7/index.html
+    content: "<!DOCTYPE html>\r
+
+      <html lang=\"en\">\r
+
+      <head>\r
+
+      \  <meta charset=\"utf-8\" />\r
+
+      \  <title>Two-Snake p5.js</title>\r
+
+      \  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"
+      />\r
+
+      \  <style>\r
+
+      \    /* Keep the container small for students on small screens */\r
+
+      \    :root { color-scheme: light dark; }\r
+
+      \    body { margin: 0; font-family: system-ui, Arial, sans-serif; display:
+      grid; place-items: center; min-height: 100vh; }\r
+
+      \    .wrap { width: 95vw; max-width: 460px; margin: 0 auto; }\r
+
+      \    #game { width: 100%; height: auto; display: block; border-radius:
+      8px; box-shadow: 0 4px 18px rgba(0,0,0,.12); }\r
+
+      \    .hud { margin-top: .5rem; display: flex; justify-content: center;
+      align-items: center; gap: 2rem; font-size: 14px; }\r
+
+      \    .pill { display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: .25rem; padding: .5rem; border: 1px solid
+      currentColor; border-radius: 999px; min-height: 60px; }\r
+
+      \    .pill-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pill-value { font-size: 11px; }\r
+
+      \    .speed-control { display: flex; flex-direction: column; align-items:
+      center; gap: .25rem; padding: .5rem; border: 1px solid currentColor;
+      border-radius: 999px; }\r
+
+      \    .speed-control label { font-size: 12px; font-weight: bold; }\r
+
+      \    .speed-slider-row { display: flex; align-items: center; gap: .5rem;
+      }\r
+
+      \    .speed-control input[type=\"range\"] { width: 80px; height: 20px; }\r
+
+      \    .speed-emoji { font-size: 16px; }\r
+
+      \    .speed-value { font-size: 11px; }\r
+
+      \    .reset-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .reset-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .reset-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .reset-btn-emoji { font-size: 16px; }\r
+
+      \    .pause-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .pause-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .pause-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pause-btn-emoji { font-size: 16px; }\r
+
+      \  </style>\r
+
+      </head>\r
+
+      <body>\r
+
+      \  <div class=\"wrap\">\r
+
+      \    <main>\r
+
+      \      <!-- p5 will attach here -->\r
+
+      \      <div id=\"p5-holder\"></div>\r
+
+      \      <div class=\"hud\">\r
+
+      \        <button class=\"pause-btn\" id=\"pause-btn\">\r
+
+      \          <span class=\"pause-btn-emoji\" id=\"pause-emoji\">⏸️</span>\r
+
+      \          <span class=\"pause-btn-label\"
+      id=\"pause-label\">Pause</span>\r
+
+      \        </button>\r
+
+      \        <button class=\"reset-btn\" id=\"reset-btn\">\r
+
+      \          <span class=\"reset-btn-emoji\">🔄</span>\r
+
+      \          <span class=\"reset-btn-label\">Reset</span>\r
+
+      \        </button>\r
+
+      \        <div class=\"speed-control\">\r
+
+      \          <label for=\"speed-slider\">Speed</label>\r
+
+      \          <div class=\"speed-slider-row\">\r
+
+      \            <span class=\"speed-emoji\">🐌</span>\r
+
+      \            <input type=\"range\" id=\"speed-slider\" min=\"0\"
+      max=\"100\" value=\"50\" step=\"1\">\r
+
+      \            <span class=\"speed-emoji\">🐇</span>\r
+
+      \          </div>\r
+
+      \          <span id=\"speed-value\" class=\"speed-value\">1.0x</span>\r
+
+      \        </div>\r
+
+      \        <div class=\"pill\" id=\"score-container\">\r
+
+      \          <span class=\"pill-label\">Score</span>\r
+
+      \          <span id=\"score\" class=\"pill-value\">0</span>\r
+
+      \        </div>\r
+
+      \      </div>\r
+
+      \    </main>\r
+
+      \  </div>\r
+
+      \r
+
+      \  <!-- p5.js (only external dependency) -->\r
+
+      \  <script
+      src=\"https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js\"></script>\r
+
+      \r
+
+      \  <!-- Game modules -->\r
+
+      \  <script src=\"/course1/snake.js\"></script>\r
+
+      \  <script src=\"/course1/player-ai.js\"></script>\r
+
+      \  <script src=\"enemy-ai.js\"></script>\r
+
+      \  <script src=\"game.js\"></script>\r
+
+      </body>\r
+
+      </html>\r\n"
+  - path: course1/unit1/lesson1/lessonpart7/enemy-ai.js
+    content: "// Eat safe food when it is within 4 spaces,\r
+
+      // otherwise move at random.\r
+
+      function enemyAI(enemy) { \r
+
+      \  let direction = enemy.currentDirection();\r
+
+      \r
+
+      \  const head = enemy.head();\r
+
+      \  const allFoods = game.foods;\r
+
+      \r
+
+      \  let closestSafeFood = null;\r
+
+      \  let minDistanceToSafeFood = Infinity;\r
+
+      \r
+
+      \  for (const foodItem of allFoods) {\r
+
+      \    if (foodItem.type !== 'poison') {\r
+
+      \      const distance = enemy.distanceTo(foodItem);\r
+
+      \      if (distance < minDistanceToSafeFood) {\r
+
+      \        minDistanceToSafeFood = distance;\r
+
+      \        closestSafeFood = foodItem;\r
+
+      \      }\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  if (closestSafeFood && minDistanceToSafeFood <= 4) {\r
+
+      \    direction = enemy.towards(closestSafeFood);\r
+
+      \  } else {\r
+
+      \    direction = enemy.randomSafeDirection();\r
+
+      \  }\r
+
+      \r
+
+      \  return direction;\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart7/game.js
+    content: "// ------ Grid & Canvas ------\r
+
+      const GRID = {\r
+
+      \  cell: 20,\r
+
+      \  cols: 20,\r
+
+      \  rows: 20,\r
+
+      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
+
+      };\r
+
+      let canvasW = GRID.cols * GRID.cell;\r
+
+      let canvasH = GRID.rows * GRID.cell;\r
+
+      \r
+
+      // ------ Game State ------\r
+
+      let player, enemy;\r
+
+      let food = { x: 0, y: 0 };\r
+
+      let allFood = []; // Array of all foods, foods[0] should always be food\r
+
+      let scoreEl;\r
+
+      let speedSlider, speedValue;\r
+
+      let winner = null;\r
+
+      let gameOver = false;\r
+
+      let gamePaused = false;\r
+
+      let trainingMode = false; // Boolean flag to control training mode\r
+
+      \r
+
+      // ------ Frame History System ------\r
+
+      let frameHistory = [];\r
+
+      let currentFrameIndex = -1\r
+
+      let inReplayMode = false;\r
+
+      let replayBannerAtTop = false;\r
+
+      \r
+
+      // Global game object accessible to AIs\r
+
+      let game = {\r
+
+      \  food: { x: 0, y: 0 },\r
+
+      \  foods: [], // Array of all foods\r
+
+      \  player: null,\r
+
+      \  enemy: null,\r
+
+      \  GRID: GRID\r
+
+      };\r
+
+      window.game = game;\r
+
+      \r
+
+      // ------ Speed Configuration ------\r
+
+      const SPEED_CONFIG = {\r
+
+      \  get playerBaseMs() { return PLAYER_CONFIG.baseMs; }, // Reference
+      player speed from PLAYER_CONFIG\r
+
+      \  get enemyBaseMs() { return ENEMY_CONFIG.baseMs; }, // Reference enemy
+      speed from ENEMY_CONFIG\r
+
+      \  minMs: 10,\r
+
+      \  maxMs: 1000,\r
+
+      \  defaultScale: 1.0\r
+
+      };\r
+
+      \r
+
+      // ------ Player Configuration ------\r
+
+      const PLAYER_CONFIG = {\r
+
+      \  id: 'SnakeBot',\r
+
+      \  start: { x: 3, y: 10 },\r
+
+      \  color: '#3b82f6',\r
+
+      \  size: 3,\r
+
+      \  direction: { x: 1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Food Configuration ------\r
+
+      const FOOD_CONFIG = {\r
+
+      \  foodCount: 1,\r
+
+      \  poisonCount: 0,\r
+
+      \  foodColor: '#22c55e',\r
+
+      \  poisonColor: '#9333ea'\r
+
+      };\r
+
+      \r
+
+      // ------ Enemy Configuration ------\r
+
+      const ENEMY_CONFIG = {\r
+
+      \  id: 'Enemy',\r
+
+      \  start: { x: 16, y: 10 },\r
+
+      \  color: '#ef4444',\r
+
+      \  size: 8,\r
+
+      \  direction: { x: -1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // Make configs accessible globally\r
+
+      window.PLAYER_CONFIG = PLAYER_CONFIG;\r
+
+      window.ENEMY_CONFIG = ENEMY_CONFIG;\r
+
+      window.FOOD_CONFIG = FOOD_CONFIG;\r
+
+      \r
+
+      const Direction = {\r
+
+      \  UP: { x: 0, y: -1 },\r
+
+      \  DOWN: { x: 0, y: 1 }, \r
+
+      \  LEFT: { x: -1, y: 0 },\r
+
+      \  RIGHT: { x: 1, y: 0 }\r
+
+      };\r
+
+      window.Direction = Direction;\r
+
+      \r
+
+      // ------ p5: setup & draw ------\r
+
+      function setup() {\r
+
+      \  const c = createCanvas(canvasW, canvasH);\r
+
+      \  c.parent('p5-holder');\r
+
+      \  pixelDensity(1);\r
+
+      \r
+
+      \  scoreEl = document.getElementById('score');\r
+
+      \  speedSlider = document.getElementById('speed-slider');\r
+
+      \  speedValue = document.getElementById('speed-value');\r
+
+      \  \r
+
+      \  speedSlider.addEventListener('input', updateSpeed);\r
+
+      \  \r
+
+      \  const resetBtn = document.getElementById('reset-btn');\r
+
+      \  resetBtn.addEventListener('click', resetGame);\r
+
+      \  \r
+
+      \  const pauseBtn = document.getElementById('pause-btn');\r
+
+      \  pauseBtn.addEventListener('click', () => {\r
+
+      \    togglePause();\r
+
+      \    // Remove focus to prevent spacebar from triggering button\r
+
+      \    pauseBtn.blur();\r
+
+      \  });\r
+
+      \  \r
+
+      \  startNewGame();\r
+
+      }\r
+
+      \r
+
+      function draw() {\r
+
+      \  background('#0b0b0b');\r
+
+      \  drawGrid();\r
+
+      \r
+
+      \  // If in replay mode, show frame replay instead of normal game\r
+
+      \  if (inReplayMode) {\r
+
+      \    const currentFrame = getCurrentFrame();\r
+
+      \    if (currentFrame) {\r
+
+      \      drawReplayFrame(currentFrame);\r
+
+      \    }\r
+
+      \    drawReplayControls();\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // If game is paused, draw everything frozen and show pause overlay\r
+
+      \  if (gamePaused) {\r
+
+      \    drawFood(allFood);\r
+
+      \    player.draw(this, GRID.cell);\r
+
+      \    if (enemy) enemy.draw(this, GRID.cell);\r
+
+      \    drawPauseOverlay();\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // If game over, draw frozen snakes + winner blinking + option to enter
+      replay\r
+
+      \  if (gameOver) {\r
+
+      \    drawFood(allFood);\r
+
+      \    drawGameOver();\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // Update global game object before running AIs\r
+
+      \  game.food = food;\r
+
+      \  game.foods = allFood;\r
+
+      \  game.player = player;\r
+
+      \  game.enemy = enemy;\r
+
+      \r
+
+      \  // Run AIs and capture their direction decisions\r
+
+      \  if (player.alive) {\r
+
+      \    const playerDirection = window.playerAI(player);\r
+
+      \    if (playerDirection) {\r
+
+      \      player.setDirection(playerDirection);\r
+
+      \    }\r
+
+      \  }\r
+
+      \  if (enemy && enemy.alive) {\r
+
+      \    const enemyDirection = window.enemyAI(enemy);\r
+
+      \    if (enemyDirection) {\r
+
+      \      enemy.setDirection(enemyDirection);\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  // Advance snakes\r
+
+      \  const now = millis();\r
+
+      \  const gameContext = { food, foods: allFood, enemy, player, GRID };\r
+
+      \  const pRes = player.moveIfReady(now, gameContext);\r
+
+      \  const eRes = enemy ? enemy.moveIfReady(now, gameContext) : { moved:
+      false, ateFood: false };\r
+
+      \r
+
+      \  // Capture frame when either snake moves\r
+
+      \  if (pRes.moved || (enemy && eRes.moved)) {\r
+
+      \    captureGameState();\r
+
+      \  }\r
+
+      \r
+
+      \  // Check collisions after both snakes have moved\r
+
+      \  if (pRes.moved) checkCollisions(player, enemy, GRID);\r
+
+      \  if (enemy && eRes.moved) checkCollisions(enemy, player, GRID);\r
+
+      \r
+
+      \  // Food handling & scoring\r
+
+      \  if (pRes.ateFood || (enemy && eRes.ateFood)) {\r
+
+      \    if (pRes.ateFood) {\r
+
+      \      // Only increase score for regular food, not poison\r
+
+      \      if (!pRes.atePoison) {\r
+
+      \        bumpScore(1);\r
+
+      \      }\r
+
+      \      moveEatenFood(pRes.eatenFood);\r
+
+      \    }\r
+
+      \    if (enemy && eRes.ateFood) {\r
+
+      \      moveEatenFood(eRes.eatenFood);\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  drawFood(allFood);\r
+
+      \  player.draw(this, GRID.cell);\r
+
+      \  if (enemy) enemy.draw(this, GRID.cell);\r
+
+      \r
+
+      \  // Check end states\r
+
+      \  if (!player.alive || (enemy && !enemy.alive)) {\r
+
+      \    gameOver = true;\r
+
+      \    if (enemy) {\r
+
+      \      if (player.alive && !enemy.alive) winner = player;\r
+
+      \      else if (enemy.alive && !player.alive) winner = enemy;\r
+
+      \      else winner = null;\r
+
+      \    } else {\r
+
+      \      // In training mode, there's no winner when game is over\r
+
+      \      winner = null;\r
+
+      \    }\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      // ------ World utilities ------\r
+
+      function checkCollisions(snake, otherSnake, GRID) {\r
+
+      \  if (!snake.alive) return;\r
+
+      \  const head = snake.head();\r
+
+      \  \r
+
+      \  // Wall collision: out of bounds -> dead\r
+
+      \  if (head.x < 0 || head.y < 0 || head.x >= GRID.cols || head.y >=
+      GRID.rows) {\r
+
+      \    snake.alive = false;\r
+
+      \    snake.deathCause = 'wall';\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // Self collision: head hits own body (excluding head)\r
+
+      \  const collides = (cells, pt) => cells.some(c => c.x === pt.x && c.y ===
+      pt.y);\r
+
+      \  if (collides(snake.body.slice(1), head)) {\r
+
+      \    snake.alive = false;\r
+
+      \    snake.deathCause = 'self';\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // Other snake collision: head hits other snake's body\r
+
+      \  if (otherSnake?.alive && collides(otherSnake.body, head)) {\r
+
+      \    snake.alive = false;\r
+
+      \    snake.deathCause = 'opponent';\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // Head-to-head collision: both snakes in same cell\r
+
+      \  if (otherSnake?.alive) {\r
+
+      \    const otherHead = otherSnake.head();\r
+
+      \    if (head.x === otherHead.x && head.y === otherHead.y) {\r
+
+      \      snake.alive = false;\r
+
+      \      snake.deathCause = 'head-to-head';\r
+
+      \      otherSnake.alive = false;\r
+
+      \      otherSnake.deathCause = 'head-to-head';\r
+
+      \      return;\r
+
+      \    }\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function initializeFoods() {\r
+
+      \  const occupied = new Set();\r
+
+      \  const add = (c) => occupied.add(`${c.x},${c.y}`);\r
+
+      \  player.body.forEach(add);\r
+
+      \  if (enemy) enemy.body.forEach(add);\r
+
+      \r
+
+      \  allFood = []; // Clear existing foods\r
+
+      \  \r
+
+      \  // Add regular food items\r
+
+      \  for (let i = 0; i < FOOD_CONFIG.foodCount; i++) {\r
+
+      \    let x, y, tries = 0;\r
+
+      \    do {\r
+
+      \      x = Math.floor(Math.random() * GRID.cols);\r
+
+      \      y = Math.floor(Math.random() * GRID.rows);\r
+
+      \      tries++;\r
+
+      \      if (tries > 500) { \r
+
+      \        // If we can't find a spot, just place it at (0,0) and break\r
+
+      \        allFood.push({x: 0, y: 0, type: 'food'});\r
+
+      \        break;\r
+
+      \      }\r
+
+      \    } while (occupied.has(`${x},${y}`));\r
+
+      \    \r
+
+      \    if (tries <= 500) {\r
+
+      \      const newFood = { x, y, type: 'food' };\r
+
+      \      allFood.push(newFood);\r
+
+      \      occupied.add(`${x},${y}`); // Mark this position as occupied for
+      next food\r
+
+      \    }\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Add poison items\r
+
+      \  for (let i = 0; i < FOOD_CONFIG.poisonCount; i++) {\r
+
+      \    let x, y, tries = 0;\r
+
+      \    do {\r
+
+      \      x = Math.floor(Math.random() * GRID.cols);\r
+
+      \      y = Math.floor(Math.random() * GRID.rows);\r
+
+      \      tries++;\r
+
+      \      if (tries > 500) { \r
+
+      \        // If we can't find a spot, just place it at (0,0) and break\r
+
+      \        allFood.push({x: 0, y: 0, type: 'poison'});\r
+
+      \        break;\r
+
+      \      }\r
+
+      \    } while (occupied.has(`${x},${y}`));\r
+
+      \    \r
+
+      \    if (tries <= 500) {\r
+
+      \      const newFood = { x, y, type: 'poison' };\r
+
+      \      allFood.push(newFood);\r
+
+      \      occupied.add(`${x},${y}`); // Mark this position as occupied for
+      next food\r
+
+      \    }\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Set the first food as the primary food for backward compatibility\r
+
+      \  if (allFood.length > 0) {\r
+
+      \    food = allFood[0];\r
+
+      \  } else {\r
+
+      \    food = { x: 0, y: 0, type: 'food' };\r
+
+      \    allFood = [food];\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function moveEatenFood(eatenFood) {\r
+
+      \  const occupied = new Set();\r
+
+      \  const add = (c) => occupied.add(`${c.x},${c.y}`);\r
+
+      \  player.body.forEach(add);\r
+
+      \  if (enemy) enemy.body.forEach(add);\r
+
+      \  \r
+
+      \  // Add all other foods to occupied positions\r
+
+      \  allFood.forEach(f => {\r
+
+      \    if (f.x !== eatenFood.x || f.y !== eatenFood.y) {\r
+
+      \      occupied.add(`${f.x},${f.y}`);\r
+
+      \    }\r
+
+      \  });\r
+
+      \r
+
+      \  let x, y, tries = 0;\r
+
+      \  do {\r
+
+      \    x = Math.floor(Math.random() * GRID.cols);\r
+
+      \    y = Math.floor(Math.random() * GRID.rows);\r
+
+      \    tries++;\r
+
+      \    if (tries > 500) { \r
+
+      \      // If we can't find a spot, just place it at (0,0)\r
+
+      \      eatenFood.x = 0;\r
+
+      \      eatenFood.y = 0;\r
+
+      \      return;\r
+
+      \    }\r
+
+      \  } while (occupied.has(`${x},${y}`));\r
+
+      \  \r
+
+      \  eatenFood.x = x;\r
+
+      \  eatenFood.y = y;\r
+
+      }\r
+
+      \r
+
+      function drawFood(f) {\r
+
+      \  // If f is an array, draw all foods\r
+
+      \  if (Array.isArray(f)) {\r
+
+      \    f.forEach(singleFood => {\r
+
+      \      push();\r
+
+      \      noStroke();\r
+
+      \      // Use different colors based on food type\r
+
+      \      const foodColor = singleFood.type === 'poison' \r
+
+      \        ? FOOD_CONFIG.poisonColor \r
+
+      \        : FOOD_CONFIG.foodColor;\r
+
+      \      fill(foodColor);\r
+
+      \      const s = GRID.cell;\r
+
+      \      rect(singleFood.x * s, singleFood.y * s, s, s, 4);\r
+
+      \      pop();\r
+
+      \    });\r
+
+      \  } else {\r
+
+      \    // Single food (backward compatibility)\r
+
+      \    push();\r
+
+      \    noStroke();\r
+
+      \    // Use food color as default for backward compatibility\r
+
+      \    const foodColor = f.type === 'poison' \r
+
+      \      ? FOOD_CONFIG.poisonColor \r
+
+      \      : FOOD_CONFIG.foodColor;\r
+
+      \    fill(foodColor);\r
+
+      \    const s = GRID.cell;\r
+
+      \    rect(f.x * s, f.y * s, s, s, 4);\r
+
+      \    pop();\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      // ------ Frame History System ------\r
+
+      function captureGameState() {\r
+
+      \  const state = {\r
+
+      \    player: {\r
+
+      \      body: [...player.body.map(seg => ({...seg}))],\r
+
+      \      alive: player.alive,\r
+
+      \      deathCause: player.deathCause,\r
+
+      \      color: player.color\r
+
+      \    },\r
+
+      \    enemy: enemy ? {\r
+
+      \      body: [...enemy.body.map(seg => ({...seg}))],\r
+
+      \      alive: enemy.alive,\r
+
+      \      deathCause: enemy.deathCause,\r
+
+      \      color: enemy.color\r
+
+      \    } : null,\r
+
+      \    food: {...food},\r
+
+      \    winner: winner,\r
+
+      \    gameOver: gameOver,\r
+
+      \    score: scoreEl ? scoreEl.textContent : '0'\r
+
+      \  };\r
+
+      \  \r
+
+      \  frameHistory.push(state);\r
+
+      \  \r
+
+      \  // Keep only last 5 frames\r
+
+      \  if (frameHistory.length > 5) {\r
+
+      \    frameHistory.shift();\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function enterReplayMode() {\r
+
+      \  if (frameHistory.length === 0) return;\r
+
+      \  inReplayMode = true;\r
+
+      \  currentFrameIndex = frameHistory.length - 1;\r
+
+      \  replayBannerAtTop = false;\r
+
+      \  noLoop(); // Stop the game loop\r
+
+      }\r
+
+      \r
+
+      function exitReplayMode() {\r
+
+      \  inReplayMode = false;\r
+
+      \  currentFrameIndex = -1;\r
+
+      \  if (!gamePaused) {\r
+
+      \    loop(); // Resume game loop unless paused (even if game over for UI
+      responsiveness)\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function stepFrame(direction) {\r
+
+      \  if (!inReplayMode || frameHistory.length === 0) return;\r
+
+      \  \r
+
+      \  if (direction === 'forward') {\r
+
+      \    currentFrameIndex = Math.min(currentFrameIndex + 1,
+      frameHistory.length - 1);\r
+
+      \  } else if (direction === 'backward') {\r
+
+      \    currentFrameIndex = Math.max(currentFrameIndex - 1, 0);\r
+
+      \  }\r
+
+      \  \r
+
+      \  redraw();\r
+
+      }\r
+
+      \r
+
+      function getCurrentFrame() {\r
+
+      \  if (!inReplayMode || currentFrameIndex < 0 || currentFrameIndex >=
+      frameHistory.length) {\r
+
+      \    return null;\r
+
+      \  }\r
+
+      \  return frameHistory[currentFrameIndex];\r
+
+      }\r
+
+      \r
+
+      function drawReplayFrame(frame) {\r
+
+      \  if (!frame) return;\r
+
+      \  \r
+
+      \  drawFood(frame.food);\r
+
+      \  \r
+
+      \  push();\r
+
+      \  noStroke();\r
+
+      \  fill(frame.player.color);\r
+
+      \  for (let i = 0; i < frame.player.body.length; i++) {\r
+
+      \    const b = frame.player.body[i];\r
+
+      \    const r = i === 0 ? 6 : 3; // roundness hint: bigger on head\r
+
+      \    rect(b.x * GRID.cell, b.y * GRID.cell, GRID.cell, GRID.cell, r);\r
+
+      \  }\r
+
+      \  pop();\r
+
+      \  \r
+
+      \  if (frame.enemy) {\r
+
+      \    push();\r
+
+      \    noStroke();\r
+
+      \    fill(frame.enemy.color);\r
+
+      \    for (let i = 0; i < frame.enemy.body.length; i++) {\r
+
+      \      const b = frame.enemy.body[i];\r
+
+      \      const r = i === 0 ? 6 : 3; // roundness hint: bigger on head\r
+
+      \      rect(b.x * GRID.cell, b.y * GRID.cell, GRID.cell, GRID.cell, r);\r
+
+      \    }\r
+
+      \    pop();\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function drawReplayControls() {\r
+
+      \  push();\r
+
+      \  noStroke();\r
+
+      \  fill(0, 180); // Semi-transparent overlay\r
+
+      \  const bannerHeight = 80;\r
+
+      \  const bannerY = replayBannerAtTop ? 0 : height - bannerHeight;\r
+
+      \  rect(0, bannerY, width, bannerHeight);\r
+
+      \  \r
+
+      \  fill(255, 220);\r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  textSize(14);\r
+
+      \  text(`Frame Replay Mode - Frame ${currentFrameIndex + 1} of
+      ${frameHistory.length}`, width/2, bannerY + 20);\r
+
+      \  textSize(12);\r
+
+      \  text('← → Arrow keys to navigate frames • F to exit replay • R to
+      restart', width/2, bannerY + 45);\r
+
+      \  text('↑ ↓ Move this banner • (Pause disabled in replay mode)', width/2,
+      bannerY + 65);\r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function drawGrid() {\r
+
+      \  push();\r
+
+      \  stroke(255, 20);\r
+
+      \  strokeWeight(1);\r
+
+      \  for (let x = 1; x < GRID.cols; x++) line(x * GRID.cell, 0, x *
+      GRID.cell, height);\r
+
+      \  for (let y = 1; y < GRID.rows; y++) line(0, y * GRID.cell, width, y *
+      GRID.cell);\r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function drawGameOver() {\r
+
+      \  const blinkOn = floor(millis() / 400) % 2 === 0;\r
+
+      \r
+
+      \  if (!player.alive || winner === player) {\r
+
+      \    if (winner === player) {\r
+
+      \      if (blinkOn) player.draw(this, GRID.cell);\r
+
+      \    } else {\r
+
+      \      player.draw(this, GRID.cell);\r
+
+      \    }\r
+
+      \  }\r
+
+      \  if (enemy && (!enemy.alive || winner === enemy)) {\r
+
+      \    if (winner === enemy) {\r
+
+      \      if (blinkOn) enemy.draw(this, GRID.cell);\r
+
+      \    } else {\r
+
+      \      enemy.draw(this, GRID.cell);\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  push();\r
+
+      \  noStroke();\r
+
+      \  fill(255, 220);\r
+
+      \  rect(0, height/2 - 60, width, 120);\r
+
+      \  fill(0);\r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  textSize(18);\r
+
+      \r
+
+      \  let line1 = '';\r
+
+      \  let line2 = '';\r
+
+      \  let line3 = 'Press R to restart.';\r
+
+      \  let line4 = frameHistory.length > 0 ? 'Press F to view replay frames.'
+      : '';\r
+
+      \  \r
+
+      \  if (trainingMode) {\r
+
+      \    line1 = 'Training Complete';\r
+
+      \    line2 = player.alive ? '' : `${PLAYER_CONFIG.id}
+      ${getDeathMessage(player.deathCause)}`;\r
+
+      \  } else if (!player.alive && !enemy.alive) {\r
+
+      \    if (player.deathCause === 'head-to-head' && enemy.deathCause ===
+      'head-to-head') {\r
+
+      \      line1 = 'Head-to-head collision!';\r
+
+      \      line2 = 'Both players crashed!';\r
+
+      \    } else {\r
+
+      \      line1 = 'Both players crashed!';\r
+
+      \      line2 = '';\r
+
+      \    }\r
+
+      \  } else if (winner === player) {\r
+
+      \    line1 = `${PLAYER_CONFIG.id} Wins!`;\r
+
+      \    line2 = `${ENEMY_CONFIG.id} ${getDeathMessage(enemy.deathCause)}`;\r
+
+      \  } else if (winner === enemy) {\r
+
+      \    line1 = `${ENEMY_CONFIG.id} Wins!`;\r
+
+      \    line2 = `${PLAYER_CONFIG.id}
+      ${getDeathMessage(player.deathCause)}`;\r
+
+      \  }\r
+
+      \r
+
+      \  text(line1, width/2, height/2 - 30);\r
+
+      \  if (line2) text(line2, width/2, height/2 - 10);\r
+
+      \  text(line3, width/2, height/2 + 10);\r
+
+      \  if (line4) {\r
+
+      \    textSize(14);\r
+
+      \    text(line4, width/2, height/2 + 30);\r
+
+      \  }\r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function getDeathMessage(deathCause) {\r
+
+      \  switch (deathCause) {\r
+
+      \    case 'wall':\r
+
+      \      return 'crashed into a wall.';\r
+
+      \    case 'self':\r
+
+      \      return 'crashed into themselves.';\r
+
+      \    case 'opponent':\r
+
+      \      return 'crashed into their opponent.';\r
+
+      \    case 'head-to-head':\r
+
+      \      return 'collided head-to-head.';\r
+
+      \    case 'poison':\r
+
+      \      return 'ate poison.';\r
+
+      \    default:\r
+
+      \      return 'crashed.';\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function bumpScore(n) {\r
+
+      \  const m = scoreEl;\r
+
+      \  if (!m) return;\r
+
+      \  const prev = Number(m.dataset.score || '0');\r
+
+      \  const curr = prev + n;\r
+
+      \  m.dataset.score = String(curr);\r
+
+      \  m.textContent = `${curr}`;\r
+
+      }\r
+
+      \r
+
+      function updateSpeed() {\r
+
+      \  const sliderValue = parseInt(speedSlider.value); // 0-100\r
+
+      \  const scale = calculateSpeedScale(sliderValue);\r
+
+      \  speedValue.textContent = `${scale.toFixed(1)}x`;\r
+
+      \  \r
+
+      \  // Update both snakes' speed using proportional scaling\r
+
+      \  if (player) player.stepMs = scaleSpeed(SPEED_CONFIG.playerBaseMs,
+      scale);\r
+
+      \  if (enemy) enemy.stepMs = scaleSpeed(SPEED_CONFIG.enemyBaseMs,
+      scale);\r
+
+      }\r
+
+      \r
+
+      // Convert slider value (0-100) to speed scale\r
+
+      function calculateSpeedScale(sliderValue) {\r
+
+      \  // Slider: 0 (snail/slow) to 100 (rabbit/fast)\r
+
+      \  // Scale: high multiplier (slow) to low multiplier (fast)\r
+
+      \  \r
+
+      \  // Find the maximum possible scale for the slower snake (enemy)\r
+
+      \  const maxScale = SPEED_CONFIG.maxMs / SPEED_CONFIG.enemyBaseMs;\r
+
+      \  const minScale = SPEED_CONFIG.minMs / SPEED_CONFIG.playerBaseMs;\r
+
+      \  \r
+
+      \  // Invert slider: 0 = fast (min scale), 100 = slow (max scale)\r
+
+      \  const normalizedValue = (100 - sliderValue) / 100; // 0 to 1\r
+
+      \  return minScale + (normalizedValue * (maxScale - minScale));\r
+
+      }\r
+
+      \r
+
+      // Apply scale to a base speed, ensuring it stays within limits\r
+
+      function scaleSpeed(baseMs, scale) {\r
+
+      \  const scaled = Math.round(baseMs * scale);\r
+
+      \  return Math.max(SPEED_CONFIG.minMs, Math.min(SPEED_CONFIG.maxMs,
+      scaled));\r
+
+      }\r
+
+      \r
+
+      // ------ Restart logic ------\r
+
+      function startNewGame() {\r
+
+      \  // Calculate current speed scale from slider\r
+
+      \  const sliderValue = speedSlider ? parseInt(speedSlider.value) : 50; //
+      Default to middle\r
+
+      \  const scale = calculateSpeedScale(sliderValue);\r
+
+      \  \r
+
+      \  player = new Snake({\r
+
+      \    ...PLAYER_CONFIG,\r
+
+      \    stepMs: scaleSpeed(SPEED_CONFIG.playerBaseMs, scale)\r
+
+      \  });\r
+
+      \  \r
+
+      \  // Only create enemy when not in training mode\r
+
+      \  if (!trainingMode) {\r
+
+      \    enemy = new Snake({\r
+
+      \      ...ENEMY_CONFIG,\r
+
+      \      stepMs: scaleSpeed(SPEED_CONFIG.enemyBaseMs, scale)\r
+
+      \    });\r
+
+      \  } else {\r
+
+      \    enemy = undefined; // Ensure enemy is undefined in training mode\r
+
+      \  }\r
+
+      \r
+
+      \  winner = null;\r
+
+      \  gameOver = false;\r
+
+      \  gamePaused = false;\r
+
+      \r
+
+      \  frameHistory = [];\r
+
+      \  exitReplayMode();\r
+
+      \r
+
+      \  game.player = player;\r
+
+      \  game.enemy = enemy;\r
+
+      \  game.food = food;\r
+
+      \r
+
+      \  scoreEl.dataset.score = '0';\r
+
+      \  scoreEl.textContent = '0';\r
+
+      \r
+
+      \  initializeFoods();\r
+
+      \  updatePauseButton();\r
+
+      \r
+
+      \  loop();\r
+
+      }\r
+
+      \r
+
+      function resetGame() {\r
+
+      \  startNewGame();\r
+
+      }\r
+
+      \r
+
+      function togglePause() {\r
+
+      \  if (gameOver || inReplayMode) return; // Can't pause when game is over
+      or in replay mode\r
+
+      \  \r
+
+      \  gamePaused = !gamePaused;\r
+
+      \  updatePauseButton();\r
+
+      \  \r
+
+      \  if (gamePaused) {\r
+
+      \    noLoop();\r
+
+      \  } else {\r
+
+      \    loop();\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function updatePauseButton() {\r
+
+      \  const pauseEmoji = document.getElementById('pause-emoji');\r
+
+      \  const pauseLabel = document.getElementById('pause-label');\r
+
+      \  \r
+
+      \  if (gamePaused) {\r
+
+      \    pauseEmoji.textContent = '▶️';\r
+
+      \    pauseLabel.textContent = 'Resume';\r
+
+      \  } else {\r
+
+      \    pauseEmoji.textContent = '⏸️';\r
+
+      \    pauseLabel.textContent = 'Pause';\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function drawPauseOverlay() {\r
+
+      \  push();\r
+
+      \  noStroke();\r
+
+      \  fill(0, 150); // Semi-transparent overlay\r
+
+      \  rect(0, 0, width, height);\r
+
+      \  \r
+
+      \  fill(255, 220);\r
+
+      \  rect(0, height/2 - 30, width, 60);\r
+
+      \  \r
+
+      \  fill(0);\r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  textSize(18);\r
+
+      \  text('Game Paused', width/2, height/2 - 10);\r
+
+      \  textSize(14);\r
+
+      \  text('Press SPACE or click Resume to continue', width/2, height/2 +
+      10);\r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function keyPressed() {\r
+
+      \  if (key.toLowerCase() === 'r') {\r
+
+      \    resetGame();\r
+
+      \  } else if (key === ' ') {\r
+
+      \    if (!inReplayMode) {\r
+
+      \      togglePause();\r
+
+      \    }\r
+
+      \  } else if (key.toLowerCase() === 'f') {\r
+
+      \    if (inReplayMode) {\r
+
+      \      exitReplayMode();\r
+
+      \      redraw();\r
+
+      \    } else if (gameOver && frameHistory.length > 0) {\r
+
+      \      enterReplayMode();\r
+
+      \    }\r
+
+      \  } else if (keyCode === 37) {\r
+
+      \    if (inReplayMode) {\r
+
+      \      stepFrame('backward');\r
+
+      \    }\r
+
+      \  } else if (keyCode === 39) {\r
+
+      \    if (inReplayMode) {\r
+
+      \      stepFrame('forward');\r
+
+      \    }\r
+
+      \  } else if (keyCode === 38) {\r
+
+      \    if (inReplayMode) {\r
+
+      \      replayBannerAtTop = true;\r
+
+      \      redraw();\r
+
+      \    }\r
+
+      \  } else if (keyCode === 40) {\r
+
+      \    if (inReplayMode) {\r
+
+      \      replayBannerAtTop = false;\r
+
+      \      redraw();\r
+
+      \    }\r
+
+      \  }\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart9/failed.md
+    content: "### VB's\r
+
+      ```javascript\r
+
+      function playerAI(player) {\r
+
+      \  const gridCenter = {x: 10, y: 10};\r
+
+      \  const enemyClosestFood = game.enemy.getClosestFood();\r
+
+      \  const enemyDistanceToFood = game.enemy.distanceTo(enemyClosestFood);\r
+
+      \  const myDistanceToFood = player.distanceTo(player.getClosestFood());\r
+
+      \r
+
+      \  let direction;\r
+
+      \r
+
+      \  if (enemyDistanceToFood < myDistanceToFood) {\r
+
+      \    console.log(\"SnakeBot: Heading to the center, can't let the enemy
+      beat me!\");\r
+
+      \    direction = player.towards(gridCenter);\r
+
+      \  } else {\r
+
+      \    console.log(\"SnakeBot: Food is mine, full speed ahead!\");\r
+
+      \    direction = player.towardsClosestFood();\r
+
+      \  }\r
+
+      \r
+
+      \  if (player.willHitSelf(direction) || player.willHitEnemy(direction))
+      {\r
+
+      \    console.log(\"SnakeBot: Whoa, that was close! Finding a safer
+      path.\");\r
+
+      \    direction = player.randomSafeDirection();\r
+
+      \  }\r
+
+      \r
+
+      \  return direction;\r
+
+      }\r
+
+      ```\r
+
+      \r
+
+      \r
+
+      ### Ian's\r
+
+      ```javascript\r
+
+      function playerAI(player) { \r
+
+      \  let direction = player.towardsClosestFood();\r
+
+      \  const enemy = game.enemy;\r
+
+      \  const gridCenter = game.GRID.center;\r
+
+      \  const food = player.getClosestFood();\r
+
+      \r
+
+      \  if (player.willHitAnything(direction)) {\r
+
+      \    console.log(\"SnakeBot: Not crashing into walls, myself, or the
+      enemy!\");\r
+
+      \    direction = player.randomSafeDirection();\r
+
+      \  }\r
+
+      \r
+
+      \  if (player.distanceToWall(direction) <= 2) {\r
+
+      \    console.log(\"SnakeBot: Too close to the wall, steering clear!\");\r
+
+      \    direction = player.randomSafeDirection();\r
+
+      \  }\r
+
+      \r
+
+      \  const myDistance = player.distanceTo(food);\r
+
+      \  const enemyDistance = enemy.distanceTo(food);\r
+
+      \  if (enemyDistance <= myDistance) {\r
+
+      \    console.log(\"SnakeBot: Enemy's closer to food, I'm taking the
+      center!\");\r
+
+      \    direction = player.towards(gridCenter);\r
+
+      \  } else {\r
+
+      \    console.log(\"SnakeBot: Food looks safe, going for it!\");\r
+
+      \    direction = player.towardsClosestFood();\r
+
+      \  }\r
+
+      \r
+
+      \  return direction;\r
+
+      }\r
+
+      ```\r
+
+      \r
+
+      \r
+
+      \r
+
+      Ian feedback\r
+
+      ```\r
+
+      My prompt didn't seem to get that allFoods was an option (at least at the
+      first attempt). Only looked at closest food and checked if poison or
+      not.\r
+
+      ```\r
+
+      \r
+
+      \r
+
+      ### Tiana\r
+
+      \r
+
+      ```prompt\r
+
+      don't eat tainted morsels. Only eat food 5 times. cut off enemy \r
+
+      ```\r
+
+      \r
+
+      Problem: Not good code.\r
+
+      ```typescript\r
+
+      function playerAI(player) { \r
+
+      \  let direction = player.currentDirection();\r
+
+      \r
+
+      \  const closestSafeFood = player.towardsClosestFood();\r
+
+      \  const enemyDirection = player.towardsEnemy();\r
+
+      \r
+
+      \  if (player.size() <= 5) {\r
+
+      \    if (!player.willHitPoison(closestSafeFood)) {\r
+
+      \      console.log(\"SnakeBot: This morsel looks clean enough, I'm taking
+      it\");\r
+
+      \      direction = closestSafeFood;\r
+
+      \    }\r
+
+      \  } else {\r
+
+      \    console.log(\"SnakeBot: I've had my fill, time to hunt\");\r
+
+      \    direction = enemyDirection;\r
+
+      \  }\r
+
+      \r
+
+      \  return direction;\r
+
+      }\r
+
+      \r
+
+      ```\r
+
+      \r
+
+      \r
+
+      ```prompt\r
+
+      cut off bulldozer. avoid coiling into yourself.Do not go for food if it's
+      too close to an edge or corner\r
+
+      ```\r
+
+      \r
+
+      Problem: Distance to wall + does not change direction\r
+
+      \r
+
+      ```typescript\r
+
+      function playerAI(player) { \r
+
+      \  let direction = player.towardsEnemy();\r
+
+      \  console.log(\"SnakeBot: I'm cutting off the Bulldozer, watch
+      this!\");\r
+
+      \r
+
+      \  if (player.willHitSelf(direction)) {\r
+
+      \    console.log(\"SnakeBot: Yikes, I almost coiled into myself!\");\r
+
+      \    direction = player.randomSafeDirection();\r
+
+      \  }\r
+
+      \r
+
+      \  const closestFood = player.getClosestFood();\r
+
+      \  if (closestFood) {\r
+
+      \    const distanceToWall =
+      player.distanceToWall(player.towards(closestFood));\r
+
+      \    if (distanceToWall <= 2) {\r
+
+      \      console.log(\"SnakeBot: That food is too close to the edge, not
+      worth it!\");\r
+
+      \    } else {\r
+
+      \      console.log(\"SnakeBot: Food looks fine, but Bulldozer is my main
+      target!\");\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  return direction;\r
+
+      }\r
+
+      \r
+
+      ```"
+  - path: course1/unit1/lesson1/lessonpart3/enemy-ai.js
+    content: "function enemyAI(player) { \r
+
+      \  // Strategy: Move in a square pattern\r
+
+      \  // Start by moving right, then down, then left, then up, repeating\r
+
+      \  \r
+
+      \  const head = player.head();\r
+
+      \  const gridCols = game.GRID.cols;\r
+
+      \  const gridRows = game.GRID.rows;\r
+
+      \  \r
+
+      \  let direction = Direction.RIGHT;\r
+
+      \  \r
+
+      \  // If near the right edge, move down\r
+
+      \  if (head.x >= gridCols - 2) {\r
+
+      \    direction = Direction.DOWN;\r
+
+      \  }\r
+
+      \  // If near the bottom edge, move left\r
+
+      \  if (head.y >= gridRows - 2) {\r
+
+      \    direction = Direction.LEFT;\r
+
+      \  }\r
+
+      \  // If near the left edge, move up\r
+
+      \  if (head.x <= 1) {\r
+
+      \    direction = Direction.UP;\r
+
+      \  }\r
+
+      \  // If near the top edge, move right again\r
+
+      \  if (head.y <= 1) {\r
+
+      \    direction = Direction.RIGHT;\r
+
+      \  }\r
+
+      \  \r
+
+      \  return direction;\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart3/index.html
+    content: "<!DOCTYPE html>\r
+
+      <html lang=\"en\">\r
+
+      <head>\r
+
+      \  <meta charset=\"utf-8\" />\r
+
+      \  <title>Two-Snake p5.js</title>\r
+
+      \  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"
+      />\r
+
+      \  <style>\r
+
+      \    /* Keep the container small for students on small screens */\r
+
+      \    :root { color-scheme: light dark; }\r
+
+      \    body { margin: 0; font-family: system-ui, Arial, sans-serif; display:
+      grid; place-items: center; min-height: 100vh; }\r
+
+      \    .wrap { width: 95vw; max-width: 460px; margin: 0 auto; }\r
+
+      \    #game { width: 100%; height: auto; display: block; border-radius:
+      8px; box-shadow: 0 4px 18px rgba(0,0,0,.12); }\r
+
+      \    .hud { margin-top: .5rem; display: flex; justify-content: center;
+      align-items: center; gap: 2rem; font-size: 14px; }\r
+
+      \    .pill { display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: .25rem; padding: .5rem; border: 1px solid
+      currentColor; border-radius: 999px; min-height: 60px; }\r
+
+      \    .pill-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pill-value { font-size: 11px; }\r
+
+      \    .speed-control { display: flex; flex-direction: column; align-items:
+      center; gap: .25rem; padding: .5rem; border: 1px solid currentColor;
+      border-radius: 999px; }\r
+
+      \    .speed-control label { font-size: 12px; font-weight: bold; }\r
+
+      \    .speed-slider-row { display: flex; align-items: center; gap: .5rem;
+      }\r
+
+      \    .speed-control input[type=\"range\"] { width: 80px; height: 20px; }\r
+
+      \    .speed-emoji { font-size: 16px; }\r
+
+      \    .speed-value { font-size: 11px; }\r
+
+      \    .reset-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .reset-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .reset-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .reset-btn-emoji { font-size: 16px; }\r
+
+      \    .pause-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .pause-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .pause-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pause-btn-emoji { font-size: 16px; }\r
+
+      \  </style>\r
+
+      </head>\r
+
+      <body>\r
+
+      \  <div class=\"wrap\">\r
+
+      \    <main>\r
+
+      \      <!-- p5 will attach here -->\r
+
+      \      <div id=\"p5-holder\"></div>\r
+
+      \      <div class=\"hud\">\r
+
+      \        <button class=\"pause-btn\" id=\"pause-btn\">\r
+
+      \          <span class=\"pause-btn-emoji\" id=\"pause-emoji\">⏸️</span>\r
+
+      \          <span class=\"pause-btn-label\"
+      id=\"pause-label\">Pause</span>\r
+
+      \        </button>\r
+
+      \        <button class=\"reset-btn\" id=\"reset-btn\">\r
+
+      \          <span class=\"reset-btn-emoji\">🔄</span>\r
+
+      \          <span class=\"reset-btn-label\">Reset</span>\r
+
+      \        </button>\r
+
+      \        <div class=\"speed-control\">\r
+
+      \          <label for=\"speed-slider\">Speed</label>\r
+
+      \          <div class=\"speed-slider-row\">\r
+
+      \            <span class=\"speed-emoji\">🐌</span>\r
+
+      \            <input type=\"range\" id=\"speed-slider\" min=\"0\"
+      max=\"100\" value=\"50\" step=\"1\">\r
+
+      \            <span class=\"speed-emoji\">🐇</span>\r
+
+      \          </div>\r
+
+      \          <span id=\"speed-value\" class=\"speed-value\">1.0x</span>\r
+
+      \        </div>\r
+
+      \        <div class=\"pill\" id=\"score-container\">\r
+
+      \          <span class=\"pill-label\">Score</span>\r
+
+      \          <span id=\"score\" class=\"pill-value\">0</span>\r
+
+      \        </div>\r
+
+      \      </div>\r
+
+      \    </main>\r
+
+      \  </div>\r
+
+      \r
+
+      \  <!-- p5.js (only external dependency) -->\r
+
+      \  <script
+      src=\"https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js\"></script>\r
+
+      \r
+
+      \  <!-- Game modules -->\r
+
+      \  <script src=\"settings.js\"></script>\r
+
+      \  <script src=\"/course1/snake.js\"></script>\r
+
+      \  <script src=\"/course1/player-ai.js\"></script>\r
+
+      \  <script src=\"enemy-ai.js\"></script>\r
+
+      \  <script src=\"/course1/game.js\"></script>\r
+
+      </body>\r
+
+      </html>\r\n"
+  - path: course1/game.js
+    content: "// ------ Grid & Canvas ------\r
+
+      let canvasW = GRID.cols * GRID.cell;\r
+
+      let canvasH = GRID.rows * GRID.cell;\r
+
+      \r
+
+      // ------ Series State ------\r
+
+      let seriesState = {\r
+
+      \  active: false,                // Whether a series is active\r
+
+      \  playerWins: 0,                // Number of wins for player\r
+
+      \  enemyWins: 0,                 // Number of wins for enemy\r
+
+      \  gamesPlayed: 0,               // Number of games played in series\r
+
+      \  seriesWinner: null,           // Overall series winner\r
+
+      \  seriesOver: false             // Whether the series is complete\r
+
+      };\r
+
+      \r
+
+      // ------ Game State ------\r
+
+      let player, enemy;\r
+
+      let food = { x: 0, y: 0 };\r
+
+      let allFood = []; // Array of all foods, foods[0] should always be food\r
+
+      let scoreEl;\r
+
+      let speedSlider, speedValue;\r
+
+      let winner = null;\r
+
+      let gameOver = false;\r
+
+      let gamePaused = false;\r
+
+      let preRoundScreen = true; // Show pre-round instructions screen\r
+
+      \r
+
+      // ------ Frame History System ------\r
+
+      let frameHistory = [];\r
+
+      let currentFrameIndex = -1\r
+
+      let inReplayMode = false;\r
+
+      let replayBannerAtTop = false;\r
+
+      \r
+
+      // Global game object accessible to AIs\r
+
+      let game = {\r
+
+      \  food: { x: 0, y: 0 },\r
+
+      \  foods: [], // Array of all foods\r
+
+      \  player: null,\r
+
+      \  enemy: null,\r
+
+      \  GRID: GRID\r
+
+      };\r
+
+      window.game = game;\r
+
+      \r
+
+      const Direction = {\r
+
+      \  UP: { x: 0, y: -1 },\r
+
+      \  DOWN: { x: 0, y: 1 }, \r
+
+      \  LEFT: { x: -1, y: 0 },\r
+
+      \  RIGHT: { x: 1, y: 0 }\r
+
+      };\r
+
+      window.Direction = Direction;\r
+
+      \r
+
+      // ------ p5: setup & draw ------\r
+
+      function setup() {\r
+
+      \  const c = createCanvas(canvasW, canvasH);\r
+
+      \  c.parent('p5-holder');\r
+
+      \  pixelDensity(1);\r
+
+      \r
+
+      \  scoreEl = document.getElementById('score');\r
+
+      \  speedSlider = document.getElementById('speed-slider');\r
+
+      \  speedValue = document.getElementById('speed-value');\r
+
+      \  \r
+
+      \  speedSlider.addEventListener('input', updateSpeed);\r
+
+      \  \r
+
+      \  const resetBtn = document.getElementById('reset-btn');\r
+
+      \  resetBtn.addEventListener('click', resetGame);\r
+
+      \  \r
+
+      \  const pauseBtn = document.getElementById('pause-btn');\r
+
+      \  pauseBtn.addEventListener('click', () => {\r
+
+      \    togglePause();\r
+
+      \    // Remove focus to prevent spacebar from triggering button\r
+
+      \    pauseBtn.blur();\r
+
+      \  });\r
+
+      \  \r
+
+      \  // Start the game (which will initialize series state if needed)\r
+
+      \  startNewGame();\r
+
+      }\r
+
+      \r
+
+      function draw() {\r
+
+      \  background('#0b0b0b');\r
+
+      \  drawGrid();\r
+
+      \r
+
+      \  // If in replay mode, show frame replay instead of normal game\r
+
+      \  if (inReplayMode) {\r
+
+      \    const currentFrame = getCurrentFrame();\r
+
+      \    if (currentFrame) {\r
+
+      \      drawReplayFrame(currentFrame);\r
+
+      \    }\r
+
+      \    drawReplayControls();\r
+
+      \    return;\r
+
+      \  }\r
+
+      \  \r
+
+      \  // If pre-round screen is active, show it and wait for player input\r
+
+      \  if (preRoundScreen) {\r
+
+      \    drawPreRoundScreen();\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // If game is paused, draw everything frozen and show pause overlay\r
+
+      \  if (gamePaused) {\r
+
+      \    drawFood(allFood);\r
+
+      \    player.draw(this, GRID.cell);\r
+
+      \    if (enemy) enemy.draw(this, GRID.cell);\r
+
+      \    drawPauseOverlay();\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // If game over, draw frozen snakes + winner blinking + option to enter
+      replay\r
+
+      \  if (gameOver) {\r
+
+      \    drawFood(allFood);\r
+
+      \    drawGameOver();\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // Update global game object before running AIs\r
+
+      \  game.food = food;\r
+
+      \  game.foods = allFood;\r
+
+      \  game.player = player;\r
+
+      \  game.enemy = enemy;\r
+
+      \r
+
+      \  // Run AIs and capture their direction decisions\r
+
+      \  if (player.alive) {\r
+
+      \    const playerDirection = window.playerAI(player);\r
+
+      \    if (playerDirection) {\r
+
+      \      player.setDirection(playerDirection);\r
+
+      \    }\r
+
+      \  }\r
+
+      \  if (enemy && enemy.alive) {\r
+
+      \    const enemyDirection = window.enemyAI(enemy);\r
+
+      \    if (enemyDirection) {\r
+
+      \      enemy.setDirection(enemyDirection);\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  // Advance snakes\r
+
+      \  const now = millis();\r
+
+      \  const gameContext = { food, foods: allFood, enemy, player, GRID };\r
+
+      \  const pRes = player.moveIfReady(now, gameContext);\r
+
+      \  const eRes = enemy ? enemy.moveIfReady(now, gameContext) : { moved:
+      false, ateFood: false };\r
+
+      \r
+
+      \  // Capture frame when either snake moves\r
+
+      \  if (pRes.moved || (enemy && eRes.moved)) {\r
+
+      \    captureGameState();\r
+
+      \  }\r
+
+      \r
+
+      \  // Check collisions after both snakes have moved\r
+
+      \  if (pRes.moved) checkCollisions(player, enemy, GRID);\r
+
+      \  if (enemy && eRes.moved) checkCollisions(enemy, player, GRID);\r
+
+      \r
+
+      \  // Food handling & scoring\r
+
+      \  if (pRes.ateFood || (enemy && eRes.ateFood)) {\r
+
+      \    if (pRes.ateFood) {\r
+
+      \      // Only increase score for regular food, not poison\r
+
+      \      if (!pRes.atePoison) {\r
+
+      \        bumpScore(1);\r
+
+      \      }\r
+
+      \      moveEatenFood(pRes.eatenFood);\r
+
+      \    }\r
+
+      \    if (enemy && eRes.ateFood) {\r
+
+      \      moveEatenFood(eRes.eatenFood);\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  drawFood(allFood);\r
+
+      \  player.draw(this, GRID.cell);\r
+
+      \  if (enemy) enemy.draw(this, GRID.cell);\r
+
+      \r
+
+      \  // Check end states\r
+
+      \  if (!player.alive || (enemy && !enemy.alive)) {\r
+
+      \    gameOver = true;\r
+
+      \    if (enemy) {\r
+
+      \      if (player.alive && !enemy.alive) winner = player;\r
+
+      \      else if (enemy.alive && !player.alive) winner = enemy;\r
+
+      \      else winner = null;\r
+
+      \      \r
+
+      \      // Update series state if series is active\r
+
+      \      if (seriesState.active) {\r
+
+      \        seriesState.gamesPlayed++;\r
+
+      \        \r
+
+      \        if (winner === player) {\r
+
+      \          seriesState.playerWins++;\r
+
+      \        } else if (winner === enemy) {\r
+
+      \          seriesState.enemyWins++;\r
+
+      \        }\r
+
+      \        \r
+
+      \        // Check if series is complete\r
+
+      \        if (seriesState.playerWins >= GAME_CONFIG.series.winsToWin || \r
+
+      \            seriesState.enemyWins >= GAME_CONFIG.series.winsToWin) {\r
+
+      \          seriesState.seriesOver = true;\r
+
+      \          if (seriesState.playerWins > seriesState.enemyWins) {\r
+
+      \            seriesState.seriesWinner = player;\r
+
+      \          } else if (seriesState.enemyWins > seriesState.playerWins) {\r
+
+      \            seriesState.seriesWinner = enemy;\r
+
+      \          } else {\r
+
+      \            seriesState.seriesWinner = null; // Tie\r
+
+      \          }\r
+
+      \        }\r
+
+      \      }\r
+
+      \    } else {\r
+
+      \      // In training mode, there's no winner when game is over\r
+
+      \      winner = null;\r
+
+      \    }\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      // ------ World utilities ------\r
+
+      function checkCollisions(snake, otherSnake, GRID) {\r
+
+      \  if (!snake.alive) return;\r
+
+      \  const head = snake.head();\r
+
+      \  \r
+
+      \  // Wall collision: out of bounds -> dead\r
+
+      \  if (head.x < 0 || head.y < 0 || head.x >= GRID.cols || head.y >=
+      GRID.rows) {\r
+
+      \    snake.alive = false;\r
+
+      \    snake.deathCause = 'wall';\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // Self collision: head hits own body (excluding head)\r
+
+      \  const collides = (cells, pt) => cells.some(c => c.x === pt.x && c.y ===
+      pt.y);\r
+
+      \  if (collides(snake.body.slice(1), head)) {\r
+
+      \    snake.alive = false;\r
+
+      \    snake.deathCause = 'self';\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // Other snake collision: head hits other snake's body\r
+
+      \  if (otherSnake?.alive && collides(otherSnake.body, head)) {\r
+
+      \    snake.alive = false;\r
+
+      \    snake.deathCause = 'opponent';\r
+
+      \    return;\r
+
+      \  }\r
+
+      \r
+
+      \  // Head-to-head collision: both snakes in same cell\r
+
+      \  if (otherSnake?.alive) {\r
+
+      \    const otherHead = otherSnake.head();\r
+
+      \    if (head.x === otherHead.x && head.y === otherHead.y) {\r
+
+      \      snake.alive = false;\r
+
+      \      snake.deathCause = 'head-to-head';\r
+
+      \      otherSnake.alive = false;\r
+
+      \      otherSnake.deathCause = 'head-to-head';\r
+
+      \      return;\r
+
+      \    }\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function initializeFoods() {\r
+
+      \  const occupied = new Set();\r
+
+      \  const add = (c) => occupied.add(`${c.x},${c.y}`);\r
+
+      \  player.body.forEach(add);\r
+
+      \  if (enemy) enemy.body.forEach(add);\r
+
+      \r
+
+      \  allFood = []; // Clear existing foods\r
+
+      \  \r
+
+      \  // Add regular food items\r
+
+      \  for (let i = 0; i < FOOD_CONFIG.foodCount; i++) {\r
+
+      \    let x, y, tries = 0;\r
+
+      \    do {\r
+
+      \      x = Math.floor(Math.random() * GRID.cols);\r
+
+      \      y = Math.floor(Math.random() * GRID.rows);\r
+
+      \      tries++;\r
+
+      \      if (tries > 500) { \r
+
+      \        // If we can't find a spot, just place it at (0,0) and break\r
+
+      \        allFood.push({x: 0, y: 0, type: 'food'});\r
+
+      \        break;\r
+
+      \      }\r
+
+      \    } while (occupied.has(`${x},${y}`));\r
+
+      \    \r
+
+      \    if (tries <= 500) {\r
+
+      \      const newFood = { x, y, type: 'food' };\r
+
+      \      allFood.push(newFood);\r
+
+      \      occupied.add(`${x},${y}`); // Mark this position as occupied for
+      next food\r
+
+      \    }\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Add poison items\r
+
+      \  for (let i = 0; i < FOOD_CONFIG.poisonCount; i++) {\r
+
+      \    let x, y, tries = 0;\r
+
+      \    do {\r
+
+      \      x = Math.floor(Math.random() * GRID.cols);\r
+
+      \      y = Math.floor(Math.random() * GRID.rows);\r
+
+      \      tries++;\r
+
+      \      if (tries > 500) { \r
+
+      \        // If we can't find a spot, just place it at (0,0) and break\r
+
+      \        allFood.push({x: 0, y: 0, type: 'poison'});\r
+
+      \        break;\r
+
+      \      }\r
+
+      \    } while (occupied.has(`${x},${y}`));\r
+
+      \    \r
+
+      \    if (tries <= 500) {\r
+
+      \      const newFood = { x, y, type: 'poison' };\r
+
+      \      allFood.push(newFood);\r
+
+      \      occupied.add(`${x},${y}`); // Mark this position as occupied for
+      next food\r
+
+      \    }\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Set the first food as the primary food for backward compatibility\r
+
+      \  if (allFood.length > 0) {\r
+
+      \    food = allFood[0];\r
+
+      \  } else {\r
+
+      \    food = { x: 0, y: 0, type: 'food' };\r
+
+      \    allFood = [food];\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function moveEatenFood(eatenFood) {\r
+
+      \  const occupied = new Set();\r
+
+      \  const add = (c) => occupied.add(`${c.x},${c.y}`);\r
+
+      \  player.body.forEach(add);\r
+
+      \  if (enemy) enemy.body.forEach(add);\r
+
+      \  \r
+
+      \  // Add all other foods to occupied positions\r
+
+      \  allFood.forEach(f => {\r
+
+      \    if (f.x !== eatenFood.x || f.y !== eatenFood.y) {\r
+
+      \      occupied.add(`${f.x},${f.y}`);\r
+
+      \    }\r
+
+      \  });\r
+
+      \r
+
+      \  let x, y, tries = 0;\r
+
+      \  do {\r
+
+      \    x = Math.floor(Math.random() * GRID.cols);\r
+
+      \    y = Math.floor(Math.random() * GRID.rows);\r
+
+      \    tries++;\r
+
+      \    if (tries > 500) { \r
+
+      \      // If we can't find a spot, just place it at (0,0)\r
+
+      \      eatenFood.x = 0;\r
+
+      \      eatenFood.y = 0;\r
+
+      \      return;\r
+
+      \    }\r
+
+      \  } while (occupied.has(`${x},${y}`));\r
+
+      \  \r
+
+      \  eatenFood.x = x;\r
+
+      \  eatenFood.y = y;\r
+
+      }\r
+
+      \r
+
+      function drawFood(f) {\r
+
+      \  // If f is an array, draw all foods\r
+
+      \  if (Array.isArray(f)) {\r
+
+      \    f.forEach(singleFood => {\r
+
+      \      push();\r
+
+      \      noStroke();\r
+
+      \      // Use different colors based on food type\r
+
+      \      const foodColor = singleFood.type === 'poison' \r
+
+      \        ? FOOD_CONFIG.poisonColor \r
+
+      \        : FOOD_CONFIG.foodColor;\r
+
+      \      fill(foodColor);\r
+
+      \      const s = GRID.cell;\r
+
+      \      rect(singleFood.x * s, singleFood.y * s, s, s, 4);\r
+
+      \      pop();\r
+
+      \    });\r
+
+      \  } else {\r
+
+      \    // Single food (backward compatibility)\r
+
+      \    push();\r
+
+      \    noStroke();\r
+
+      \    // Use food color as default for backward compatibility\r
+
+      \    const foodColor = f.type === 'poison' \r
+
+      \      ? FOOD_CONFIG.poisonColor \r
+
+      \      : FOOD_CONFIG.foodColor;\r
+
+      \    fill(foodColor);\r
+
+      \    const s = GRID.cell;\r
+
+      \    rect(f.x * s, f.y * s, s, s, 4);\r
+
+      \    pop();\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      // ------ Frame History System ------\r
+
+      function captureGameState() {\r
+
+      \  const state = {\r
+
+      \    player: {\r
+
+      \      body: [...player.body.map(seg => ({...seg}))],\r
+
+      \      alive: player.alive,\r
+
+      \      deathCause: player.deathCause,\r
+
+      \      color: player.color\r
+
+      \    },\r
+
+      \    enemy: enemy ? {\r
+
+      \      body: [...enemy.body.map(seg => ({...seg}))],\r
+
+      \      alive: enemy.alive,\r
+
+      \      deathCause: enemy.deathCause,\r
+
+      \      color: enemy.color\r
+
+      \    } : null,\r
+
+      \    food: {...food},\r
+
+      \    winner: winner,\r
+
+      \    gameOver: gameOver,\r
+
+      \    score: scoreEl ? scoreEl.textContent : '0'\r
+
+      \  };\r
+
+      \  \r
+
+      \  frameHistory.push(state);\r
+
+      \  \r
+
+      \  // Keep only last 5 frames\r
+
+      \  if (frameHistory.length > 5) {\r
+
+      \    frameHistory.shift();\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function enterReplayMode() {\r
+
+      \  if (frameHistory.length === 0) return;\r
+
+      \  inReplayMode = true;\r
+
+      \  currentFrameIndex = frameHistory.length - 1;\r
+
+      \  replayBannerAtTop = false;\r
+
+      \  noLoop(); // Stop the game loop\r
+
+      }\r
+
+      \r
+
+      function exitReplayMode() {\r
+
+      \  inReplayMode = false;\r
+
+      \  currentFrameIndex = -1;\r
+
+      \  if (!gamePaused) {\r
+
+      \    loop(); // Resume game loop unless paused (even if game over for UI
+      responsiveness)\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function stepFrame(direction) {\r
+
+      \  if (!inReplayMode || frameHistory.length === 0) return;\r
+
+      \  \r
+
+      \  if (direction === 'forward') {\r
+
+      \    currentFrameIndex = Math.min(currentFrameIndex + 1,
+      frameHistory.length - 1);\r
+
+      \  } else if (direction === 'backward') {\r
+
+      \    currentFrameIndex = Math.max(currentFrameIndex - 1, 0);\r
+
+      \  }\r
+
+      \  \r
+
+      \  redraw();\r
+
+      }\r
+
+      \r
+
+      function getCurrentFrame() {\r
+
+      \  if (!inReplayMode || currentFrameIndex < 0 || currentFrameIndex >=
+      frameHistory.length) {\r
+
+      \    return null;\r
+
+      \  }\r
+
+      \  return frameHistory[currentFrameIndex];\r
+
+      }\r
+
+      \r
+
+      function drawReplayFrame(frame) {\r
+
+      \  if (!frame) return;\r
+
+      \  \r
+
+      \  drawFood(frame.food);\r
+
+      \  \r
+
+      \  push();\r
+
+      \  noStroke();\r
+
+      \  fill(frame.player.color);\r
+
+      \  for (let i = 0; i < frame.player.body.length; i++) {\r
+
+      \    const b = frame.player.body[i];\r
+
+      \    const r = i === 0 ? 6 : 3; // roundness hint: bigger on head\r
+
+      \    rect(b.x * GRID.cell, b.y * GRID.cell, GRID.cell, GRID.cell, r);\r
+
+      \  }\r
+
+      \  pop();\r
+
+      \  \r
+
+      \  if (frame.enemy) {\r
+
+      \    push();\r
+
+      \    noStroke();\r
+
+      \    fill(frame.enemy.color);\r
+
+      \    for (let i = 0; i < frame.enemy.body.length; i++) {\r
+
+      \      const b = frame.enemy.body[i];\r
+
+      \      const r = i === 0 ? 6 : 3; // roundness hint: bigger on head\r
+
+      \      rect(b.x * GRID.cell, b.y * GRID.cell, GRID.cell, GRID.cell, r);\r
+
+      \    }\r
+
+      \    pop();\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function drawReplayControls() {\r
+
+      \  push();\r
+
+      \  noStroke();\r
+
+      \  fill(0, 180); // Semi-transparent overlay\r
+
+      \  const bannerHeight = 80;\r
+
+      \  const bannerY = replayBannerAtTop ? 0 : height - bannerHeight;\r
+
+      \  rect(0, bannerY, width, bannerHeight);\r
+
+      \  \r
+
+      \  fill(255, 220);\r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  textSize(14);\r
+
+      \  text(`Frame Replay Mode - Frame ${currentFrameIndex + 1} of
+      ${frameHistory.length}`, width/2, bannerY + 20);\r
+
+      \  textSize(12);\r
+
+      \  text('← → Arrow keys to navigate frames • F to exit replay • R to
+      restart', width/2, bannerY + 45);\r
+
+      \  text('↑ ↓ Move this banner • (Pause disabled in replay mode)', width/2,
+      bannerY + 65);\r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function drawGrid() {\r
+
+      \  push();\r
+
+      \  stroke(255, 20);\r
+
+      \  strokeWeight(1);\r
+
+      \  for (let x = 1; x < GRID.cols; x++) line(x * GRID.cell, 0, x *
+      GRID.cell, height);\r
+
+      \  for (let y = 1; y < GRID.rows; y++) line(0, y * GRID.cell, width, y *
+      GRID.cell);\r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function drawGameOver() {\r
+
+      \  const blinkOn = floor(millis() / 400) % 2 === 0;\r
+
+      \r
+
+      \  // Draw the snakes\r
+
+      \  if (!player.alive || winner === player) {\r
+
+      \    if (winner === player) {\r
+
+      \      if (blinkOn) player.draw(this, GRID.cell);\r
+
+      \    } else {\r
+
+      \      player.draw(this, GRID.cell);\r
+
+      \    }\r
+
+      \  }\r
+
+      \  if (enemy && (!enemy.alive || winner === enemy)) {\r
+
+      \    if (winner === enemy) {\r
+
+      \      if (blinkOn) enemy.draw(this, GRID.cell);\r
+
+      \    } else {\r
+
+      \      enemy.draw(this, GRID.cell);\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  push();\r
+
+      \  noStroke();\r
+
+      \  fill(255, 220);\r
+
+      \  \r
+
+      \  // Make the overlay taller for series information\r
+
+      \  const overlayHeight = seriesState.active ? 150 : 120;\r
+
+      \  rect(0, height/2 - overlayHeight/2, width, overlayHeight);\r
+
+      \  \r
+
+      \  fill(0);\r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  textSize(22); // Larger text for winner\r
+
+      \r
+
+      \  let line1 = ''; // Winner announcement\r
+
+      \  let line2 = ''; // Series score\r
+
+      \  let line3 = ''; // Death message\r
+
+      \  let line4 = ''; // Series winner (if applicable)\r
+
+      \  let instructionsText = '';\r
+
+      \  \r
+
+      \  // Set game outcome text\r
+
+      \  if (GAME_CONFIG.trainingMode) {\r
+
+      \    line1 = 'TRAINING COMPLETE';\r
+
+      \    line3 = player.alive ? '' : `${PLAYER_CONFIG.id}
+      ${getDeathMessage(player.deathCause)}`;\r
+
+      \  } else if (!player.alive && !enemy.alive) {\r
+
+      \    if (player.deathCause === 'head-to-head' && enemy.deathCause ===
+      'head-to-head') {\r
+
+      \      line1 = 'HEAD-TO-HEAD COLLISION!';\r
+
+      \      line3 = 'Both players crashed!';\r
+
+      \    } else {\r
+
+      \      line1 = 'BOTH PLAYERS CRASHED!';\r
+
+      \    }\r
+
+      \  } else if (winner === player) {\r
+
+      \    line1 = `${PLAYER_CONFIG.id.toUpperCase()} WINS!`;\r
+
+      \    line3 = `${ENEMY_CONFIG.id} ${getDeathMessage(enemy.deathCause)}`;\r
+
+      \  } else if (winner === enemy) {\r
+
+      \    line1 = `${ENEMY_CONFIG.id.toUpperCase()} WINS!`;\r
+
+      \    line3 = `${PLAYER_CONFIG.id}
+      ${getDeathMessage(player.deathCause)}`;\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Set instructions text\r
+
+      \  if (GAME_CONFIG.trainingMode) {\r
+
+      \    instructionsText = 'R: Restart';\r
+
+      \  } else if (seriesState.active) {\r
+
+      \    if (seriesState.seriesOver) {\r
+
+      \      instructionsText = 'R: Start New Series';\r
+
+      \    } else {\r
+
+      \      instructionsText = '\\nENTER: Continue\\nR: Reset';\r
+
+      \    }\r
+
+      \  } else {\r
+
+      \    instructionsText = 'R: Restart';\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Add replay option if available\r
+
+      \  if (frameHistory.length > 0) {\r
+
+      \    instructionsText += '\\nF: Replay Mode';\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Add series information if active\r
+
+      \  if (seriesState.active) {\r
+
+      \    // Series score in new format\r
+
+      \    line2 = `${PLAYER_CONFIG.id}: ${seriesState.playerWins} -
+      ${seriesState.enemyWins} ${ENEMY_CONFIG.id}`;\r
+
+      \    \r
+
+      \    // If series is over, show overall winner\r
+
+      \    if (seriesState.seriesOver) {\r
+
+      \      if (seriesState.seriesWinner === player) {\r
+
+      \        line4 = `${PLAYER_CONFIG.id.toUpperCase()} WINS THE SERIES!`;\r
+
+      \      } else if (seriesState.seriesWinner === enemy) {\r
+
+      \        line4 = `${ENEMY_CONFIG.id.toUpperCase()} WINS THE SERIES!`;\r
+
+      \      } else {\r
+
+      \        line4 = `SERIES ENDS IN A TIE!`;\r
+
+      \      }\r
+
+      \    }\r
+
+      \    \r
+
+      \    // Display all information with updated positioning\r
+
+      \    text(line1, width/2, height/2 - overlayHeight/2 + 35); // Winner
+      announcement at top\r
+
+      \    \r
+
+      \    textSize(18);\r
+
+      \    text(line2, width/2, height/2 - overlayHeight/2 + 65); // Series
+      score\r
+
+      \    \r
+
+      \    textSize(16);\r
+
+      \    text(line3, width/2, height/2 - overlayHeight/2 + 90); // Death
+      message\r
+
+      \    \r
+
+      \    if (line4) {\r
+
+      \      textSize(20);\r
+
+      \      text(line4, width/2, height/2 + 5); // Series winner\r
+
+      \    }\r
+
+      \    \r
+
+      \    // Instructions at bottom in smaller text\r
+
+      \    textSize(12);\r
+
+      \    textAlign(LEFT, CENTER);\r
+
+      \    text(instructionsText, width/2 - 60, height/2 + overlayHeight/2 -
+      30);\r
+
+      \    textAlign(CENTER, CENTER);\r
+
+      \  } else {\r
+
+      \    // Non-series mode positioning\r
+
+      \    text(line1, width/2, height/2 - 40); // Winner announcement\r
+
+      \    \r
+
+      \    textSize(16);\r
+
+      \    text(line3, width/2, height/2 - 10); // Death message\r
+
+      \    \r
+
+      \    // Instructions at bottom in smaller text\r
+
+      \    textSize(12);\r
+
+      \    textAlign(LEFT, CENTER);\r
+
+      \    text(instructionsText, width/2 - 60, height/2 + 30);\r
+
+      \    textAlign(CENTER, CENTER);\r
+
+      \  }\r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function getDeathMessage(deathCause) {\r
+
+      \  switch (deathCause) {\r
+
+      \    case 'wall':\r
+
+      \      return 'crashed into a wall.';\r
+
+      \    case 'self':\r
+
+      \      return 'crashed into themselves.';\r
+
+      \    case 'opponent':\r
+
+      \      return 'crashed into their opponent.';\r
+
+      \    case 'head-to-head':\r
+
+      \      return 'collided head-to-head.';\r
+
+      \    case 'poison':\r
+
+      \      return 'ate poison.';\r
+
+      \    default:\r
+
+      \      return 'crashed.';\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function bumpScore(n) {\r
+
+      \  const m = scoreEl;\r
+
+      \  if (!m) return;\r
+
+      \  const prev = Number(m.dataset.score || '0');\r
+
+      \  const curr = prev + n;\r
+
+      \  m.dataset.score = String(curr);\r
+
+      \  m.textContent = `${curr}`;\r
+
+      }\r
+
+      \r
+
+      function updateSpeed() {\r
+
+      \  const sliderValue = parseInt(speedSlider.value); // 0-100\r
+
+      \  const scale = calculateSpeedScale(sliderValue);\r
+
+      \  speedValue.textContent = `${scale.toFixed(1)}x`;\r
+
+      \  \r
+
+      \  // Update both snakes' speed using proportional scaling\r
+
+      \  if (player) player.stepMs = scaleSpeed(SPEED_CONFIG.playerBaseMs,
+      scale);\r
+
+      \  if (enemy) enemy.stepMs = scaleSpeed(SPEED_CONFIG.enemyBaseMs,
+      scale);\r
+
+      }\r
+
+      \r
+
+      // Convert slider value (0-100) to speed scale\r
+
+      function calculateSpeedScale(sliderValue) {\r
+
+      \  // Slider: 0 (snail/slow) to 100 (rabbit/fast)\r
+
+      \  // Scale: high multiplier (slow) to low multiplier (fast)\r
+
+      \  \r
+
+      \  // Find the maximum possible scale for the slower snake (enemy)\r
+
+      \  const maxScale = SPEED_CONFIG.maxMs / SPEED_CONFIG.enemyBaseMs;\r
+
+      \  const minScale = SPEED_CONFIG.minMs / SPEED_CONFIG.playerBaseMs;\r
+
+      \  \r
+
+      \  // Invert slider: 0 = fast (min scale), 100 = slow (max scale)\r
+
+      \  const normalizedValue = (100 - sliderValue) / 100; // 0 to 1\r
+
+      \  return minScale + (normalizedValue * (maxScale - minScale));\r
+
+      }\r
+
+      \r
+
+      // Apply scale to a base speed, ensuring it stays within limits\r
+
+      function scaleSpeed(baseMs, scale) {\r
+
+      \  const scaled = Math.round(baseMs * scale);\r
+
+      \  return Math.max(SPEED_CONFIG.minMs, Math.min(SPEED_CONFIG.maxMs,
+      scaled));\r
+
+      }\r
+
+      \r
+
+      // ------ Restart logic ------\r
+
+      // Initialize series state\r
+
+      function resetSeriesState() {\r
+
+      \  // Series is never active in training mode\r
+
+      \  const isSeriesActive = GAME_CONFIG.series.enabled &&
+      !GAME_CONFIG.trainingMode;\r
+
+      \  \r
+
+      \  seriesState = {\r
+
+      \    active: isSeriesActive,\r
+
+      \    playerWins: 0,\r
+
+      \    enemyWins: 0,\r
+
+      \    gamesPlayed: 0,\r
+
+      \    seriesWinner: null,\r
+
+      \    seriesOver: false\r
+
+      \  };\r
+
+      }\r
+
+      \r
+
+      function startNewGame(continueSeriesMode = false) {\r
+
+      \  // Calculate current speed scale from slider\r
+
+      \  const sliderValue = speedSlider ? parseInt(speedSlider.value) : 50; //
+      Default to middle\r
+
+      \  const scale = calculateSpeedScale(sliderValue);\r
+
+      \  \r
+
+      \  player = new Snake({\r
+
+      \    ...PLAYER_CONFIG,\r
+
+      \    stepMs: scaleSpeed(SPEED_CONFIG.playerBaseMs, scale)\r
+
+      \  });\r
+
+      \  \r
+
+      \  // Only create enemy when not in training mode\r
+
+      \  if (!GAME_CONFIG.trainingMode) {\r
+
+      \    enemy = new Snake({\r
+
+      \      ...ENEMY_CONFIG,\r
+
+      \      stepMs: scaleSpeed(SPEED_CONFIG.enemyBaseMs, scale)\r
+
+      \    });\r
+
+      \    \r
+
+      \    // Initialize or continue series when not in training mode\r
+
+      \    if (GAME_CONFIG.series.enabled) {\r
+
+      \      if (!continueSeriesMode) {\r
+
+      \        // Start fresh series\r
+
+      \        resetSeriesState();\r
+
+      \      }\r
+
+      \      seriesState.active = true;\r
+
+      \    }\r
+
+      \  } else {\r
+
+      \    enemy = undefined; // Ensure enemy is undefined in training mode\r
+
+      \    seriesState.active = false;\r
+
+      \  }\r
+
+      \r
+
+      \  winner = null;\r
+
+      \  gameOver = false;\r
+
+      \  gamePaused = false;\r
+
+      \  preRoundScreen = !continueSeriesMode; // Show pre-round screen when
+      starting a new game\r
+
+      \r
+
+      \  frameHistory = [];\r
+
+      \  exitReplayMode();\r
+
+      \r
+
+      \  game.player = player;\r
+
+      \  game.enemy = enemy;\r
+
+      \  game.food = food;\r
+
+      \r
+
+      \  scoreEl.dataset.score = '0';\r
+
+      \  scoreEl.textContent = '0';\r
+
+      \r
+
+      \  initializeFoods();\r
+
+      \  updatePauseButton();\r
+
+      \r
+
+      \  loop();\r
+
+      }\r
+
+      \r
+
+      function resetGame() {\r
+
+      \  startNewGame(false); // false = don't continue series, start fresh\r
+
+      }\r
+
+      \r
+
+      // Continue series (used by Enter key)\r
+
+      function continueGame() {\r
+
+      \  if (gameOver && seriesState.active && !seriesState.seriesOver) {\r
+
+      \    startNewGame(true); // true = continue series\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function togglePause() {\r
+
+      \  if (gameOver || inReplayMode || preRoundScreen) return; // Can't pause
+      during pre-round, game over or replay mode\r
+
+      \  \r
+
+      \  gamePaused = !gamePaused;\r
+
+      \  updatePauseButton();\r
+
+      \  \r
+
+      \  if (gamePaused) {\r
+
+      \    noLoop();\r
+
+      \  } else {\r
+
+      \    loop();\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function updatePauseButton() {\r
+
+      \  const pauseEmoji = document.getElementById('pause-emoji');\r
+
+      \  const pauseLabel = document.getElementById('pause-label');\r
+
+      \  \r
+
+      \  if (gamePaused) {\r
+
+      \    pauseEmoji.textContent = '▶️';\r
+
+      \    pauseLabel.textContent = 'Resume';\r
+
+      \  } else {\r
+
+      \    pauseEmoji.textContent = '⏸️';\r
+
+      \    pauseLabel.textContent = 'Pause';\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function drawPauseOverlay() {\r
+
+      \  push();\r
+
+      \  noStroke();\r
+
+      \  fill(0, 150); // Semi-transparent overlay\r
+
+      \  rect(0, 0, width, height);\r
+
+      \  \r
+
+      \  fill(255, 220);\r
+
+      \  rect(0, height/2 - 30, width, 60);\r
+
+      \  \r
+
+      \  fill(0);\r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  textSize(18);\r
+
+      \  text('Game Paused', width/2, height/2 - 10);\r
+
+      \  textSize(14);\r
+
+      \  text('Press SPACE or click Resume to continue', width/2, height/2 +
+      10);\r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function drawPreRoundScreen() {\r
+
+      \r
+
+      \  const baseYOffset = 20;\r
+
+      \  push();\r
+
+      \  background('#0b0b0b');\r
+
+      \  drawGrid();\r
+
+      \  \r
+
+      \  // Draw snakes in their starting positions but frozen\r
+
+      \  player.draw(this, GRID.cell);\r
+
+      \  if (enemy) enemy.draw(this, GRID.cell);\r
+
+      \  \r
+
+      \  // Draw the pre-round message box\r
+
+      \  noStroke();\r
+
+      \  fill(255, 220);\r
+
+      \  const boxHeight = 260;\r
+
+      \  rect(0, height/2 - boxHeight/2, width, boxHeight);\r
+
+      \  \r
+
+      \  fill(0);\r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  textSize(30);\r
+
+      \  text(`${player.id} vs. ${enemy.id}`, width/2, height/2 - boxHeight/2 +
+      40);\r
+
+      \  \r
+
+      \  textSize(16);\r
+
+      \  text('RULES', width/2, height/2 - boxHeight/2 + 60 + baseYOffset);\r
+
+      \  \r
+
+      \  textSize(16);\r
+
+      \  text('Win a Round: Opponent crashes first', width/2, height/2 -
+      boxHeight/2 + 80 + baseYOffset);\r
+
+      \r
+
+      \  textSize(16);\r
+
+      \  text(`Win the Game: First to ${GAME_CONFIG.series.winsToWin} round
+      wins`, width/2, height/2 - boxHeight/2 + 100 + baseYOffset);\r
+
+      \r
+
+      \  textSize(16);\r
+
+      \  text('Lose If You Crash Into:', width/2, height/2 - boxHeight/2 + 120 +
+      baseYOffset);\r
+
+      \r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  textSize(14);\r
+
+      \  text('Any Wall\\nYour own body\\nOpponent\\'s body', width/2, height/2
+      - boxHeight/2 + 160 + baseYOffset);\r
+
+      \r
+
+      \  textSize(14);\r
+
+      \  text('Press ENTER to begin', width/2, height/2 - boxHeight/2 + 210 +
+      baseYOffset);\r
+
+      \r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function keyPressed() {\r
+
+      \  if (key.toLowerCase() === 'r') {\r
+
+      \    resetGame();\r
+
+      \  } else if (keyCode === ENTER || keyCode === RETURN) {\r
+
+      \    if (preRoundScreen) {\r
+
+      \      // Dismiss pre-round screen on Enter/Return\r
+
+      \      preRoundScreen = false;\r
+
+      \      return;\r
+
+      \    }\r
+
+      \    continueGame();\r
+
+      \  } else if (key === ' ') {\r
+
+      \    if (!inReplayMode && !preRoundScreen) {\r
+
+      \      togglePause();\r
+
+      \    }\r
+
+      \  } else if (key.toLowerCase() === 'f') {\r
+
+      \    if (inReplayMode) {\r
+
+      \      exitReplayMode();\r
+
+      \      redraw();\r
+
+      \    } else if (gameOver && frameHistory.length > 0) {\r
+
+      \      enterReplayMode();\r
+
+      \    }\r
+
+      \  } else if (keyCode === 37) {\r
+
+      \    if (inReplayMode) {\r
+
+      \      stepFrame('backward');\r
+
+      \    }\r
+
+      \  } else if (keyCode === 39) {\r
+
+      \    if (inReplayMode) {\r
+
+      \      stepFrame('forward');\r
+
+      \    }\r
+
+      \  } else if (keyCode === 38) {\r
+
+      \    if (inReplayMode) {\r
+
+      \      replayBannerAtTop = true;\r
+
+      \      redraw();\r
+
+      \    }\r
+
+      \  } else if (keyCode === 40) {\r
+
+      \    if (inReplayMode) {\r
+
+      \      replayBannerAtTop = false;\r
+
+      \      redraw();\r
+
+      \    }\r
+
+      \  }\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart3/settings.js
+    content: "// ------ Grid & Canvas ------\r
+
+      const GRID = {\r
+
+      \  cell: 20,\r
+
+      \  cols: 20,\r
+
+      \  rows: 20,\r
+
+      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
+
+      };\r
+
+      \r
+
+      // ------ Game Configuration ------\r
+
+      const GAME_CONFIG = {\r
+
+      \  // Series settings\r
+
+      \  series: {\r
+
+      \    enabled: true,              // Enable/disable series mode (ignored in
+      training mode)\r
+
+      \    winsToWin: 3,               // First to X wins\r
+
+      \    resetBetweenGames: true     // Whether to reset the canvas between
+      games\r
+
+      \  },\r
+
+      \  // Training mode setting\r
+
+      \  trainingMode: false,          // Whether we're in training mode (no
+      enemy, series disabled)\r
+
+      };\r
+
+      \r
+
+      // ------ Player Configuration ------\r
+
+      const PLAYER_CONFIG = {\r
+
+      \  id: 'SnakeBot',\r
+
+      \  start: { x: 3, y: 10 },\r
+
+      \  color: '#3b82f6',\r
+
+      \  size: 3,\r
+
+      \  direction: { x: 1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Food Configuration ------\r
+
+      const FOOD_CONFIG = {\r
+
+      \  foodCount: 1,\r
+
+      \  poisonCount: 0,\r
+
+      \  foodColor: '#22c55e',\r
+
+      \  poisonColor: '#9333ea'\r
+
+      };\r
+
+      \r
+
+      // ------ Enemy Configuration ------\r
+
+      const ENEMY_CONFIG = {\r
+
+      \  id: 'TrainingBot',\r
+
+      \  start: { x: 16, y: 10 },\r
+
+      \  color: '#ef4444',\r
+
+      \  size: 1,\r
+
+      \  direction: { x: 1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Speed Configuration ------\r
+
+      const SPEED_CONFIG = {\r
+
+      \  get playerBaseMs() { return PLAYER_CONFIG.baseMs; }, // Reference
+      player speed from PLAYER_CONFIG\r
+
+      \  get enemyBaseMs() { return ENEMY_CONFIG.baseMs; }, // Reference enemy
+      speed from ENEMY_CONFIG\r
+
+      \  minMs: 10,\r
+
+      \  maxMs: 1000,\r
+
+      \  defaultScale: 1.0\r
+
+      };\r
+
+      \r
+
+      // Make all configs globally accessible\r
+
+      window.GRID = GRID;\r
+
+      window.GAME_CONFIG = GAME_CONFIG;\r
+
+      window.PLAYER_CONFIG = PLAYER_CONFIG;\r
+
+      window.FOOD_CONFIG = FOOD_CONFIG;\r
+
+      window.ENEMY_CONFIG = ENEMY_CONFIG;\r
+
+      window.SPEED_CONFIG = SPEED_CONFIG;"
+  - path: course1/unit1/lesson1/lessonpart6/index.html
+    content: "<!DOCTYPE html>\r
+
+      <html lang=\"en\">\r
+
+      <head>\r
+
+      \  <meta charset=\"utf-8\" />\r
+
+      \  <title>Two-Snake p5.js</title>\r
+
+      \  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"
+      />\r
+
+      \  <style>\r
+
+      \    /* Keep the container small for students on small screens */\r
+
+      \    :root { color-scheme: light dark; }\r
+
+      \    body { margin: 0; font-family: system-ui, Arial, sans-serif; display:
+      grid; place-items: center; min-height: 100vh; }\r
+
+      \    .wrap { width: 95vw; max-width: 460px; margin: 0 auto; }\r
+
+      \    #game { width: 100%; height: auto; display: block; border-radius:
+      8px; box-shadow: 0 4px 18px rgba(0,0,0,.12); }\r
+
+      \    .hud { margin-top: .5rem; display: flex; justify-content: center;
+      align-items: center; gap: 2rem; font-size: 14px; }\r
+
+      \    .pill { display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: .25rem; padding: .5rem; border: 1px solid
+      currentColor; border-radius: 999px; min-height: 60px; }\r
+
+      \    .pill-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pill-value { font-size: 11px; }\r
+
+      \    .speed-control { display: flex; flex-direction: column; align-items:
+      center; gap: .25rem; padding: .5rem; border: 1px solid currentColor;
+      border-radius: 999px; }\r
+
+      \    .speed-control label { font-size: 12px; font-weight: bold; }\r
+
+      \    .speed-slider-row { display: flex; align-items: center; gap: .5rem;
+      }\r
+
+      \    .speed-control input[type=\"range\"] { width: 80px; height: 20px; }\r
+
+      \    .speed-emoji { font-size: 16px; }\r
+
+      \    .speed-value { font-size: 11px; }\r
+
+      \    .reset-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .reset-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .reset-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .reset-btn-emoji { font-size: 16px; }\r
+
+      \    .pause-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .pause-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .pause-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pause-btn-emoji { font-size: 16px; }\r
+
+      \  </style>\r
+
+      </head>\r
+
+      <body>\r
+
+      \  <div class=\"wrap\">\r
+
+      \    <main>\r
+
+      \      <!-- p5 will attach here -->\r
+
+      \      <div id=\"p5-holder\"></div>\r
+
+      \      <div class=\"hud\">\r
+
+      \        <button class=\"pause-btn\" id=\"pause-btn\">\r
+
+      \          <span class=\"pause-btn-emoji\" id=\"pause-emoji\">⏸️</span>\r
+
+      \          <span class=\"pause-btn-label\"
+      id=\"pause-label\">Pause</span>\r
+
+      \        </button>\r
+
+      \        <button class=\"reset-btn\" id=\"reset-btn\">\r
+
+      \          <span class=\"reset-btn-emoji\">🔄</span>\r
+
+      \          <span class=\"reset-btn-label\">Reset</span>\r
+
+      \        </button>\r
+
+      \        <div class=\"speed-control\">\r
+
+      \          <label for=\"speed-slider\">Speed</label>\r
+
+      \          <div class=\"speed-slider-row\">\r
+
+      \            <span class=\"speed-emoji\">🐌</span>\r
+
+      \            <input type=\"range\" id=\"speed-slider\" min=\"0\"
+      max=\"100\" value=\"50\" step=\"1\">\r
+
+      \            <span class=\"speed-emoji\">🐇</span>\r
+
+      \          </div>\r
+
+      \          <span id=\"speed-value\" class=\"speed-value\">1.0x</span>\r
+
+      \        </div>\r
+
+      \        <div class=\"pill\" id=\"score-container\">\r
+
+      \          <span class=\"pill-label\">Score</span>\r
+
+      \          <span id=\"score\" class=\"pill-value\">0</span>\r
+
+      \        </div>\r
+
+      \      </div>\r
+
+      \    </main>\r
+
+      \  </div>\r
+
+      \r
+
+      \  <!-- p5.js (only external dependency) -->\r
+
+      \  <script
+      src=\"https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js\"></script>\r
+
+      \r
+
+      \  <!-- Game modules -->\r
+
+      \  <script src=\"settings.js\"></script>\r
+
+      \  <script src=\"/course1/snake.js\"></script>\r
+
+      \  <script src=\"/course1/player-ai.js\"></script>\r
+
+      \  <script src=\"enemy-ai.js\"></script>\r
+
+      \  <script src=\"/course1/game.js\"></script>\r
+
+      </body>\r
+
+      </html>\r\n"
+  - path: course1/unit1/lesson1/lessonpart6/enemy-ai.js
+    content: "// Eat safe food when it is within 4 spaces,\r
+
+      // otherwise move at random.\r
+
+      function enemyAI(enemy) { \r
+
+      \  let direction = enemy.currentDirection();\r
+
+      \r
+
+      \  const head = enemy.head();\r
+
+      \  const allFoods = game.foods;\r
+
+      \r
+
+      \  let closestSafeFood = null;\r
+
+      \  let minDistanceToSafeFood = Infinity;\r
+
+      \r
+
+      \  for (const foodItem of allFoods) {\r
+
+      \    if (foodItem.type !== 'poison') {\r
+
+      \      const distance = enemy.distanceTo(foodItem);\r
+
+      \      if (distance < minDistanceToSafeFood) {\r
+
+      \        minDistanceToSafeFood = distance;\r
+
+      \        closestSafeFood = foodItem;\r
+
+      \      }\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  if (closestSafeFood && minDistanceToSafeFood <= 4) {\r
+
+      \    direction = enemy.towards(closestSafeFood);\r
+
+      \  } else {\r
+
+      \    direction = enemy.randomSafeDirection();\r
+
+      \  }\r
+
+      \r
+
+      \  return direction;\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart6/settings.js
+    content: "// ------ Grid & Canvas ------\r
+
+      const GRID = {\r
+
+      \  cell: 20,\r
+
+      \  cols: 20,\r
+
+      \  rows: 20,\r
+
+      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
+
+      };\r
+
+      \r
+
+      // ------ Game Configuration ------\r
+
+      const GAME_CONFIG = {\r
+
+      \  // Series settings\r
+
+      \  series: {\r
+
+      \    enabled: true,              // Enable/disable series mode (ignored in
+      training mode)\r
+
+      \    winsToWin: 3,               // First to X wins\r
+
+      \    resetBetweenGames: true     // Whether to reset the canvas between
+      games\r
+
+      \  },\r
+
+      \  // Training mode setting\r
+
+      \  trainingMode: false,          // Whether we're in training mode (no
+      enemy, series disabled)\r
+
+      };\r
+
+      \r
+
+      // ------ Player Configuration ------\r
+
+      const PLAYER_CONFIG = {\r
+
+      \  id: 'SnakeBot',\r
+
+      \  start: { x: 3, y: 10 },\r
+
+      \  color: '#3b82f6',\r
+
+      \  size: 3,\r
+
+      \  direction: { x: 1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Food Configuration ------\r
+
+      const FOOD_CONFIG = {\r
+
+      \  foodCount: 1,\r
+
+      \  poisonCount: 3,\r
+
+      \  foodColor: '#22c55e',\r
+
+      \  poisonColor: '#9333ea'\r
+
+      };\r
+
+      \r
+
+      // ------ Enemy Configuration ------\r
+
+      const ENEMY_CONFIG = {\r
+
+      \  id: 'Venomancer',\r
+
+      \  start: { x: 16, y: 10 },\r
+
+      \  color: '#9333ea',\r
+
+      \  size: 3,\r
+
+      \  direction: { x: -1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Speed Configuration ------\r
+
+      const SPEED_CONFIG = {\r
+
+      \  get playerBaseMs() { return PLAYER_CONFIG.baseMs; }, // Reference
+      player speed from PLAYER_CONFIG\r
+
+      \  get enemyBaseMs() { return ENEMY_CONFIG.baseMs; }, // Reference enemy
+      speed from ENEMY_CONFIG\r
+
+      \  minMs: 10,\r
+
+      \  maxMs: 1000,\r
+
+      \  defaultScale: 1.0\r
+
+      };\r
+
+      \r
+
+      // Make all configs globally accessible\r
+
+      window.GRID = GRID;\r
+
+      window.GAME_CONFIG = GAME_CONFIG;\r
+
+      window.PLAYER_CONFIG = PLAYER_CONFIG;\r
+
+      window.FOOD_CONFIG = FOOD_CONFIG;\r
+
+      window.ENEMY_CONFIG = ENEMY_CONFIG;\r
+
+      window.SPEED_CONFIG = SPEED_CONFIG;"
+  - path: course1/unit1/lesson1/lessonpart5/index.html
+    content: "<!DOCTYPE html>\r
+
+      <html lang=\"en\">\r
+
+      <head>\r
+
+      \  <meta charset=\"utf-8\" />\r
+
+      \  <title>Two-Snake p5.js</title>\r
+
+      \  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"
+      />\r
+
+      \  <style>\r
+
+      \    /* Keep the container small for students on small screens */\r
+
+      \    :root { color-scheme: light dark; }\r
+
+      \    body { margin: 0; font-family: system-ui, Arial, sans-serif; display:
+      grid; place-items: center; min-height: 100vh; }\r
+
+      \    .wrap { width: 95vw; max-width: 460px; margin: 0 auto; }\r
+
+      \    #game { width: 100%; height: auto; display: block; border-radius:
+      8px; box-shadow: 0 4px 18px rgba(0,0,0,.12); }\r
+
+      \    .hud { margin-top: .5rem; display: flex; justify-content: center;
+      align-items: center; gap: 2rem; font-size: 14px; }\r
+
+      \    .pill { display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: .25rem; padding: .5rem; border: 1px solid
+      currentColor; border-radius: 999px; min-height: 60px; }\r
+
+      \    .pill-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pill-value { font-size: 11px; }\r
+
+      \    .speed-control { display: flex; flex-direction: column; align-items:
+      center; gap: .25rem; padding: .5rem; border: 1px solid currentColor;
+      border-radius: 999px; }\r
+
+      \    .speed-control label { font-size: 12px; font-weight: bold; }\r
+
+      \    .speed-slider-row { display: flex; align-items: center; gap: .5rem;
+      }\r
+
+      \    .speed-control input[type=\"range\"] { width: 80px; height: 20px; }\r
+
+      \    .speed-emoji { font-size: 16px; }\r
+
+      \    .speed-value { font-size: 11px; }\r
+
+      \    .reset-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .reset-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .reset-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .reset-btn-emoji { font-size: 16px; }\r
+
+      \    .pause-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .pause-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .pause-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pause-btn-emoji { font-size: 16px; }\r
+
+      \  </style>\r
+
+      </head>\r
+
+      <body>\r
+
+      \  <div class=\"wrap\">\r
+
+      \    <main>\r
+
+      \      <!-- p5 will attach here -->\r
+
+      \      <div id=\"p5-holder\"></div>\r
+
+      \      <div class=\"hud\">\r
+
+      \        <button class=\"pause-btn\" id=\"pause-btn\">\r
+
+      \          <span class=\"pause-btn-emoji\" id=\"pause-emoji\">⏸️</span>\r
+
+      \          <span class=\"pause-btn-label\"
+      id=\"pause-label\">Pause</span>\r
+
+      \        </button>\r
+
+      \        <button class=\"reset-btn\" id=\"reset-btn\">\r
+
+      \          <span class=\"reset-btn-emoji\">🔄</span>\r
+
+      \          <span class=\"reset-btn-label\">Reset</span>\r
+
+      \        </button>\r
+
+      \        <div class=\"speed-control\">\r
+
+      \          <label for=\"speed-slider\">Speed</label>\r
+
+      \          <div class=\"speed-slider-row\">\r
+
+      \            <span class=\"speed-emoji\">🐌</span>\r
+
+      \            <input type=\"range\" id=\"speed-slider\" min=\"0\"
+      max=\"100\" value=\"50\" step=\"1\">\r
+
+      \            <span class=\"speed-emoji\">🐇</span>\r
+
+      \          </div>\r
+
+      \          <span id=\"speed-value\" class=\"speed-value\">1.0x</span>\r
+
+      \        </div>\r
+
+      \        <div class=\"pill\" id=\"score-container\">\r
+
+      \          <span class=\"pill-label\">Score</span>\r
+
+      \          <span id=\"score\" class=\"pill-value\">0</span>\r
+
+      \        </div>\r
+
+      \      </div>\r
+
+      \    </main>\r
+
+      \  </div>\r
+
+      \r
+
+      \  <!-- p5.js (only external dependency) -->\r
+
+      \  <script
+      src=\"https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js\"></script>\r
+
+      \r
+
+      \  <!-- Game modules -->\r
+
+      \  <script src=\"settings.js\"></script>\r
+
+      \  <script src=\"/course1/snake.js\"></script>\r
+
+      \  <script src=\"/course1/player-ai.js\"></script>\r
+
+      \  <script src=\"enemy-ai.js\"></script>\r
+
+      \  <script src=\"/course1/game.js\"></script>\r
+
+      </body>\r
+
+      </html>\r\n"
+  - path: course1/unit1/lesson1/lessonpart5/enemy-ai.js
+    content: "function enemyAI(enemy) { \r
+
+      \  const playerHead = game.player.head();\r
+
+      \  const playerCurrentDir = game.player.currentDirection();\r
+
+      \  const targetAhead = { \r
+
+      \    x: playerHead.x + playerCurrentDir.x, \r
+
+      \    y: playerHead.y + playerCurrentDir.y \r
+
+      \  };\r
+
+      \r
+
+      \  const dirToCutOff = enemy.towards(targetAhead);\r
+
+      \r
+
+      \  return dirToCutOff;\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart5/settings.js
+    content: "// ------ Grid & Canvas ------\r
+
+      const GRID = {\r
+
+      \  cell: 20,\r
+
+      \  cols: 20,\r
+
+      \  rows: 20,\r
+
+      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
+
+      };\r
+
+      \r
+
+      // ------ Game Configuration ------\r
+
+      const GAME_CONFIG = {\r
+
+      \  // Series settings\r
+
+      \  series: {\r
+
+      \    enabled: true,              // Enable/disable series mode (ignored in
+      training mode)\r
+
+      \    winsToWin: 3,               // First to X wins\r
+
+      \    resetBetweenGames: true     // Whether to reset the canvas between
+      games\r
+
+      \  },\r
+
+      \  // Training mode setting\r
+
+      \  trainingMode: false,          // Whether we're in training mode (no
+      enemy, series disabled)\r
+
+      };\r
+
+      \r
+
+      // ------ Player Configuration ------\r
+
+      const PLAYER_CONFIG = {\r
+
+      \  id: 'SnakeBot',\r
+
+      \  start: { x: 3, y: 10 },\r
+
+      \  color: '#3b82f6',\r
+
+      \  size: 3,\r
+
+      \  direction: { x: 1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Food Configuration ------\r
+
+      const FOOD_CONFIG = {\r
+
+      \  foodCount: 1,\r
+
+      \  poisonCount: 0,\r
+
+      \  foodColor: '#22c55e',\r
+
+      \  poisonColor: '#9333ea'\r
+
+      };\r
+
+      \r
+
+      // ------ Enemy Configuration ------\r
+
+      const ENEMY_CONFIG = {\r
+
+      \  id: 'Bulldozer',\r
+
+      \  start: { x: 16, y: 10 },\r
+
+      \  color: '#f58c0bff',\r
+
+      \  size: 6,\r
+
+      \  direction: { x: -1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Speed Configuration ------\r
+
+      const SPEED_CONFIG = {\r
+
+      \  get playerBaseMs() { return PLAYER_CONFIG.baseMs; }, // Reference
+      player speed from PLAYER_CONFIG\r
+
+      \  get enemyBaseMs() { return ENEMY_CONFIG.baseMs; }, // Reference enemy
+      speed from ENEMY_CONFIG\r
+
+      \  minMs: 10,\r
+
+      \  maxMs: 1000,\r
+
+      \  defaultScale: 1.0\r
+
+      };\r
+
+      \r
+
+      // Make all configs globally accessible\r
+
+      window.GRID = GRID;\r
+
+      window.GAME_CONFIG = GAME_CONFIG;\r
+
+      window.PLAYER_CONFIG = PLAYER_CONFIG;\r
+
+      window.FOOD_CONFIG = FOOD_CONFIG;\r
+
+      window.ENEMY_CONFIG = ENEMY_CONFIG;\r
+
+      window.SPEED_CONFIG = SPEED_CONFIG;"
+  - path: course1/unit1/lesson1/lessonpart4/index.html
+    content: "<!DOCTYPE html>\r
+
+      <html lang=\"en\">\r
+
+      <head>\r
+
+      \  <meta charset=\"utf-8\" />\r
+
+      \  <title>Two-Snake p5.js</title>\r
+
+      \  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"
+      />\r
+
+      \  <style>\r
+
+      \    /* Keep the container small for students on small screens */\r
+
+      \    :root { color-scheme: light dark; }\r
+
+      \    body { margin: 0; font-family: system-ui, Arial, sans-serif; display:
+      grid; place-items: center; min-height: 100vh; }\r
+
+      \    .wrap { width: 95vw; max-width: 460px; margin: 0 auto; }\r
+
+      \    #game { width: 100%; height: auto; display: block; border-radius:
+      8px; box-shadow: 0 4px 18px rgba(0,0,0,.12); }\r
+
+      \    .hud { margin-top: .5rem; display: flex; justify-content: center;
+      align-items: center; gap: 2rem; font-size: 14px; }\r
+
+      \    .pill { display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: .25rem; padding: .5rem; border: 1px solid
+      currentColor; border-radius: 999px; min-height: 60px; }\r
+
+      \    .pill-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pill-value { font-size: 11px; }\r
+
+      \    .speed-control { display: flex; flex-direction: column; align-items:
+      center; gap: .25rem; padding: .5rem; border: 1px solid currentColor;
+      border-radius: 999px; }\r
+
+      \    .speed-control label { font-size: 12px; font-weight: bold; }\r
+
+      \    .speed-slider-row { display: flex; align-items: center; gap: .5rem;
+      }\r
+
+      \    .speed-control input[type=\"range\"] { width: 80px; height: 20px; }\r
+
+      \    .speed-emoji { font-size: 16px; }\r
+
+      \    .speed-value { font-size: 11px; }\r
+
+      \    .reset-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .reset-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .reset-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .reset-btn-emoji { font-size: 16px; }\r
+
+      \    .pause-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .pause-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .pause-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pause-btn-emoji { font-size: 16px; }\r
+
+      \  </style>\r
+
+      </head>\r
+
+      <body>\r
+
+      \  <div class=\"wrap\">\r
+
+      \    <main>\r
+
+      \      <!-- p5 will attach here -->\r
+
+      \      <div id=\"p5-holder\"></div>\r
+
+      \      <div class=\"hud\">\r
+
+      \        <button class=\"pause-btn\" id=\"pause-btn\">\r
+
+      \          <span class=\"pause-btn-emoji\" id=\"pause-emoji\">⏸️</span>\r
+
+      \          <span class=\"pause-btn-label\"
+      id=\"pause-label\">Pause</span>\r
+
+      \        </button>\r
+
+      \        <button class=\"reset-btn\" id=\"reset-btn\">\r
+
+      \          <span class=\"reset-btn-emoji\">🔄</span>\r
+
+      \          <span class=\"reset-btn-label\">Reset</span>\r
+
+      \        </button>\r
+
+      \        <div class=\"speed-control\">\r
+
+      \          <label for=\"speed-slider\">Speed</label>\r
+
+      \          <div class=\"speed-slider-row\">\r
+
+      \            <span class=\"speed-emoji\">🐌</span>\r
+
+      \            <input type=\"range\" id=\"speed-slider\" min=\"0\"
+      max=\"100\" value=\"50\" step=\"1\">\r
+
+      \            <span class=\"speed-emoji\">🐇</span>\r
+
+      \          </div>\r
+
+      \          <span id=\"speed-value\" class=\"speed-value\">1.0x</span>\r
+
+      \        </div>\r
+
+      \        <div class=\"pill\" id=\"score-container\">\r
+
+      \          <span class=\"pill-label\">Score</span>\r
+
+      \          <span id=\"score\" class=\"pill-value\">0</span>\r
+
+      \        </div>\r
+
+      \      </div>\r
+
+      \    </main>\r
+
+      \  </div>\r
+
+      \r
+
+      \  <!-- p5.js (only external dependency) -->\r
+
+      \  <script
+      src=\"https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js\"></script>\r
+
+      \r
+
+      \  <!-- Game modules -->\r
+
+      \  <script src=\"settings.js\"></script>\r
+
+      \  <script src=\"/course1/snake.js\"></script>\r
+
+      \  <script src=\"/course1/player-ai.js\"></script>\r
+
+      \  <script src=\"enemy-ai.js\"></script>\r
+
+      \  <script src=\"/course1/game.js\"></script>\r
+
+      </body>\r
+
+      </html>\r\n"
+  - path: course1/unit1/lesson1/lessonpart4/enemy-ai.js
+    content: "function enemyAI(enemy) { \r
+
+      \  const direction = enemy.towardsClosestFood();\r
+
+      \  return direction;\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart4/settings.js
+    content: "// ------ Grid & Canvas ------\r
+
+      const GRID = {\r
+
+      \  cell: 20,\r
+
+      \  cols: 20,\r
+
+      \  rows: 20,\r
+
+      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
+
+      };\r
+
+      \r
+
+      // ------ Game Configuration ------\r
+
+      const GAME_CONFIG = {\r
+
+      \  // Series settings\r
+
+      \  series: {\r
+
+      \    enabled: true,              // Enable/disable series mode (ignored in
+      training mode)\r
+
+      \    winsToWin: 3,               // First to X wins\r
+
+      \    resetBetweenGames: true     // Whether to reset the canvas between
+      games\r
+
+      \  },\r
+
+      \  // Training mode setting\r
+
+      \  trainingMode: false,          // Whether we're in training mode (no
+      enemy, series disabled)\r
+
+      };\r
+
+      \r
+
+      // ------ Player Configuration ------\r
+
+      const PLAYER_CONFIG = {\r
+
+      \  id: 'SnakeBot',\r
+
+      \  start: { x: 3, y: 10 },\r
+
+      \  color: '#3b82f6',\r
+
+      \  size: 3,\r
+
+      \  direction: { x: 1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Food Configuration ------\r
+
+      const FOOD_CONFIG = {\r
+
+      \  foodCount: 1,\r
+
+      \  poisonCount: 0,\r
+
+      \  foodColor: '#22c55e',\r
+
+      \  poisonColor: '#9333ea'\r
+
+      };\r
+
+      \r
+
+      // ------ Enemy Configuration ------\r
+
+      const ENEMY_CONFIG = {\r
+
+      \  id: 'Hungry Serpent',\r
+
+      \  start: { x: 16, y: 10 },\r
+
+      \  color: '#f0a50eff',\r
+
+      \  size: 3,\r
+
+      \  direction: { x: -1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Speed Configuration ------\r
+
+      const SPEED_CONFIG = {\r
+
+      \  get playerBaseMs() { return PLAYER_CONFIG.baseMs; }, // Reference
+      player speed from PLAYER_CONFIG\r
+
+      \  get enemyBaseMs() { return ENEMY_CONFIG.baseMs; }, // Reference enemy
+      speed from ENEMY_CONFIG\r
+
+      \  minMs: 10,\r
+
+      \  maxMs: 1000,\r
+
+      \  defaultScale: 1.0\r
+
+      };\r
+
+      \r
+
+      // Make all configs globally accessible\r
+
+      window.GRID = GRID;\r
+
+      window.GAME_CONFIG = GAME_CONFIG;\r
+
+      window.PLAYER_CONFIG = PLAYER_CONFIG;\r
+
+      window.FOOD_CONFIG = FOOD_CONFIG;\r
+
+      window.ENEMY_CONFIG = ENEMY_CONFIG;\r
+
+      window.SPEED_CONFIG = SPEED_CONFIG;"
+units:
+  - unit1/index.yml
