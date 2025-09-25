@@ -114,275 +114,6 @@ systemPrompts:
 
       - Only check for poison food if the user specifically requests it
 files:
-  - path: course1/unit1/lesson1/lessonpart9/failed.md
-    content: "### VB's\r
-
-      ```javascript\r
-
-      function playerAI(player) {\r
-
-      \  const gridCenter = {x: 10, y: 10};\r
-
-      \  const enemyClosestFood = game.enemy.getClosestFood();\r
-
-      \  const enemyDistanceToFood = game.enemy.distanceTo(enemyClosestFood);\r
-
-      \  const myDistanceToFood = player.distanceTo(player.getClosestFood());\r
-
-      \r
-
-      \  let direction;\r
-
-      \r
-
-      \  if (enemyDistanceToFood < myDistanceToFood) {\r
-
-      \    console.log(\"SnakeBot: Heading to the center, can't let the enemy
-      beat me!\");\r
-
-      \    direction = player.towards(gridCenter);\r
-
-      \  } else {\r
-
-      \    console.log(\"SnakeBot: Food is mine, full speed ahead!\");\r
-
-      \    direction = player.towardsClosestFood();\r
-
-      \  }\r
-
-      \r
-
-      \  if (player.willHitSelf(direction) || player.willHitEnemy(direction))
-      {\r
-
-      \    console.log(\"SnakeBot: Whoa, that was close! Finding a safer
-      path.\");\r
-
-      \    direction = player.randomSafeDirection();\r
-
-      \  }\r
-
-      \r
-
-      \  return direction;\r
-
-      }\r
-
-      ```\r
-
-      \r
-
-      \r
-
-      ### Ian's\r
-
-      ```javascript\r
-
-      function playerAI(player) { \r
-
-      \  let direction = player.towardsClosestFood();\r
-
-      \  const enemy = game.enemy;\r
-
-      \  const gridCenter = game.GRID.center;\r
-
-      \  const food = player.getClosestFood();\r
-
-      \r
-
-      \  if (player.willHitAnything(direction)) {\r
-
-      \    console.log(\"SnakeBot: Not crashing into walls, myself, or the
-      enemy!\");\r
-
-      \    direction = player.randomSafeDirection();\r
-
-      \  }\r
-
-      \r
-
-      \  if (player.distanceToWall(direction) <= 2) {\r
-
-      \    console.log(\"SnakeBot: Too close to the wall, steering clear!\");\r
-
-      \    direction = player.randomSafeDirection();\r
-
-      \  }\r
-
-      \r
-
-      \  const myDistance = player.distanceTo(food);\r
-
-      \  const enemyDistance = enemy.distanceTo(food);\r
-
-      \  if (enemyDistance <= myDistance) {\r
-
-      \    console.log(\"SnakeBot: Enemy's closer to food, I'm taking the
-      center!\");\r
-
-      \    direction = player.towards(gridCenter);\r
-
-      \  } else {\r
-
-      \    console.log(\"SnakeBot: Food looks safe, going for it!\");\r
-
-      \    direction = player.towardsClosestFood();\r
-
-      \  }\r
-
-      \r
-
-      \  return direction;\r
-
-      }\r
-
-      ```\r
-
-      \r
-
-      \r
-
-      \r
-
-      Ian feedback\r
-
-      ```\r
-
-      My prompt didn't seem to get that allFoods was an option (at least at the
-      first attempt). Only looked at closest food and checked if poison or
-      not.\r
-
-      ```\r
-
-      \r
-
-      \r
-
-      ### Tiana\r
-
-      \r
-
-      ```prompt\r
-
-      don't eat tainted morsels. Only eat food 5 times. cut off enemy \r
-
-      ```\r
-
-      \r
-
-      Problem: Not good code.\r
-
-      ```typescript\r
-
-      function playerAI(player) { \r
-
-      \  let direction = player.currentDirection();\r
-
-      \r
-
-      \  const closestSafeFood = player.towardsClosestFood();\r
-
-      \  const enemyDirection = player.towardsEnemy();\r
-
-      \r
-
-      \  if (player.size() <= 5) {\r
-
-      \    if (!player.willHitPoison(closestSafeFood)) {\r
-
-      \      console.log(\"SnakeBot: This morsel looks clean enough, I'm taking
-      it\");\r
-
-      \      direction = closestSafeFood;\r
-
-      \    }\r
-
-      \  } else {\r
-
-      \    console.log(\"SnakeBot: I've had my fill, time to hunt\");\r
-
-      \    direction = enemyDirection;\r
-
-      \  }\r
-
-      \r
-
-      \  return direction;\r
-
-      }\r
-
-      \r
-
-      ```\r
-
-      \r
-
-      \r
-
-      ```prompt\r
-
-      cut off bulldozer. avoid coiling into yourself.Do not go for food if it's
-      too close to an edge or corner\r
-
-      ```\r
-
-      \r
-
-      Problem: Distance to wall + does not change direction\r
-
-      \r
-
-      ```typescript\r
-
-      function playerAI(player) { \r
-
-      \  let direction = player.towardsEnemy();\r
-
-      \  console.log(\"SnakeBot: I'm cutting off the Bulldozer, watch
-      this!\");\r
-
-      \r
-
-      \  if (player.willHitSelf(direction)) {\r
-
-      \    console.log(\"SnakeBot: Yikes, I almost coiled into myself!\");\r
-
-      \    direction = player.randomSafeDirection();\r
-
-      \  }\r
-
-      \r
-
-      \  const closestFood = player.getClosestFood();\r
-
-      \  if (closestFood) {\r
-
-      \    const distanceToWall =
-      player.distanceToWall(player.towards(closestFood));\r
-
-      \    if (distanceToWall <= 2) {\r
-
-      \      console.log(\"SnakeBot: That food is too close to the edge, not
-      worth it!\");\r
-
-      \    } else {\r
-
-      \      console.log(\"SnakeBot: Food looks fine, but Bulldozer is my main
-      target!\");\r
-
-      \    }\r
-
-      \  }\r
-
-      \r
-
-      \  return direction;\r
-
-      }\r
-
-      \r
-
-      ```"
   - path: course1/player-ai.js
     content: "function playerAI(enemy) {\r
 
@@ -2962,6 +2693,275 @@ files:
           Write clear, simple instructions for SnakeBot to follow below.
           Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
       -->
+  - path: course1/unit1/lesson1/lessonpart9/failed.md
+    content: "### VB's\r
+
+      ```javascript\r
+
+      function playerAI(player) {\r
+
+      \  const gridCenter = {x: 10, y: 10};\r
+
+      \  const enemyClosestFood = game.enemy.getClosestFood();\r
+
+      \  const enemyDistanceToFood = game.enemy.distanceTo(enemyClosestFood);\r
+
+      \  const myDistanceToFood = player.distanceTo(player.getClosestFood());\r
+
+      \r
+
+      \  let direction;\r
+
+      \r
+
+      \  if (enemyDistanceToFood < myDistanceToFood) {\r
+
+      \    console.log(\"SnakeBot: Heading to the center, can't let the enemy
+      beat me!\");\r
+
+      \    direction = player.towards(gridCenter);\r
+
+      \  } else {\r
+
+      \    console.log(\"SnakeBot: Food is mine, full speed ahead!\");\r
+
+      \    direction = player.towardsClosestFood();\r
+
+      \  }\r
+
+      \r
+
+      \  if (player.willHitSelf(direction) || player.willHitEnemy(direction))
+      {\r
+
+      \    console.log(\"SnakeBot: Whoa, that was close! Finding a safer
+      path.\");\r
+
+      \    direction = player.randomSafeDirection();\r
+
+      \  }\r
+
+      \r
+
+      \  return direction;\r
+
+      }\r
+
+      ```\r
+
+      \r
+
+      \r
+
+      ### Ian's\r
+
+      ```javascript\r
+
+      function playerAI(player) { \r
+
+      \  let direction = player.towardsClosestFood();\r
+
+      \  const enemy = game.enemy;\r
+
+      \  const gridCenter = game.GRID.center;\r
+
+      \  const food = player.getClosestFood();\r
+
+      \r
+
+      \  if (player.willHitAnything(direction)) {\r
+
+      \    console.log(\"SnakeBot: Not crashing into walls, myself, or the
+      enemy!\");\r
+
+      \    direction = player.randomSafeDirection();\r
+
+      \  }\r
+
+      \r
+
+      \  if (player.distanceToWall(direction) <= 2) {\r
+
+      \    console.log(\"SnakeBot: Too close to the wall, steering clear!\");\r
+
+      \    direction = player.randomSafeDirection();\r
+
+      \  }\r
+
+      \r
+
+      \  const myDistance = player.distanceTo(food);\r
+
+      \  const enemyDistance = enemy.distanceTo(food);\r
+
+      \  if (enemyDistance <= myDistance) {\r
+
+      \    console.log(\"SnakeBot: Enemy's closer to food, I'm taking the
+      center!\");\r
+
+      \    direction = player.towards(gridCenter);\r
+
+      \  } else {\r
+
+      \    console.log(\"SnakeBot: Food looks safe, going for it!\");\r
+
+      \    direction = player.towardsClosestFood();\r
+
+      \  }\r
+
+      \r
+
+      \  return direction;\r
+
+      }\r
+
+      ```\r
+
+      \r
+
+      \r
+
+      \r
+
+      Ian feedback\r
+
+      ```\r
+
+      My prompt didn't seem to get that allFoods was an option (at least at the
+      first attempt). Only looked at closest food and checked if poison or
+      not.\r
+
+      ```\r
+
+      \r
+
+      \r
+
+      ### Tiana\r
+
+      \r
+
+      ```prompt\r
+
+      don't eat tainted morsels. Only eat food 5 times. cut off enemy \r
+
+      ```\r
+
+      \r
+
+      Problem: Not good code.\r
+
+      ```typescript\r
+
+      function playerAI(player) { \r
+
+      \  let direction = player.currentDirection();\r
+
+      \r
+
+      \  const closestSafeFood = player.towardsClosestFood();\r
+
+      \  const enemyDirection = player.towardsEnemy();\r
+
+      \r
+
+      \  if (player.size() <= 5) {\r
+
+      \    if (!player.willHitPoison(closestSafeFood)) {\r
+
+      \      console.log(\"SnakeBot: This morsel looks clean enough, I'm taking
+      it\");\r
+
+      \      direction = closestSafeFood;\r
+
+      \    }\r
+
+      \  } else {\r
+
+      \    console.log(\"SnakeBot: I've had my fill, time to hunt\");\r
+
+      \    direction = enemyDirection;\r
+
+      \  }\r
+
+      \r
+
+      \  return direction;\r
+
+      }\r
+
+      \r
+
+      ```\r
+
+      \r
+
+      \r
+
+      ```prompt\r
+
+      cut off bulldozer. avoid coiling into yourself.Do not go for food if it's
+      too close to an edge or corner\r
+
+      ```\r
+
+      \r
+
+      Problem: Distance to wall + does not change direction\r
+
+      \r
+
+      ```typescript\r
+
+      function playerAI(player) { \r
+
+      \  let direction = player.towardsEnemy();\r
+
+      \  console.log(\"SnakeBot: I'm cutting off the Bulldozer, watch
+      this!\");\r
+
+      \r
+
+      \  if (player.willHitSelf(direction)) {\r
+
+      \    console.log(\"SnakeBot: Yikes, I almost coiled into myself!\");\r
+
+      \    direction = player.randomSafeDirection();\r
+
+      \  }\r
+
+      \r
+
+      \  const closestFood = player.getClosestFood();\r
+
+      \  if (closestFood) {\r
+
+      \    const distanceToWall =
+      player.distanceToWall(player.towards(closestFood));\r
+
+      \    if (distanceToWall <= 2) {\r
+
+      \      console.log(\"SnakeBot: That food is too close to the edge, not
+      worth it!\");\r
+
+      \    } else {\r
+
+      \      console.log(\"SnakeBot: Food looks fine, but Bulldozer is my main
+      target!\");\r
+
+      \    }\r
+
+      \  }\r
+
+      \r
+
+      \  return direction;\r
+
+      }\r
+
+      \r
+
+      ```"
   - path: course1/unit1/lesson1/lessonpart4/index.html
     content: "<!DOCTYPE html>\r
 
@@ -5041,6 +5041,12 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
+  - path: course1/unit1/lesson1/lessonpart4/prompt.md
+    content: >-
+      <!-- 🐍 COACH'S CORNER 🐍
+          Write clear, simple instructions for SnakeBot to follow below.
+          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
+      -->
   - path: course1/unit1/lesson1/lessonpart6/index.html
     content: "<!DOCTYPE html>\r
 
@@ -5398,6 +5404,341 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
+  - path: course1/unit1/lesson1/lessonpart6/prompt.md
+    content: >-
+      <!-- 🐍 COACH'S CORNER 🐍
+          Write clear, simple instructions for SnakeBot to follow below.
+          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
+      -->
+  - path: course1/unit1/lesson1/lessonpart5/index.html
+    content: "<!DOCTYPE html>\r
+
+      <html lang=\"en\">\r
+
+      <head>\r
+
+      \  <meta charset=\"utf-8\" />\r
+
+      \  <title>Two-Snake p5.js</title>\r
+
+      \  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"
+      />\r
+
+      \  <style>\r
+
+      \    /* Keep the container small for students on small screens */\r
+
+      \    :root { color-scheme: light dark; }\r
+
+      \    body { margin: 0; font-family: system-ui, Arial, sans-serif; display:
+      grid; place-items: center; min-height: 100vh; }\r
+
+      \    .wrap { width: 95vw; max-width: 460px; margin: 0 auto; }\r
+
+      \    #game { width: 100%; height: auto; display: block; border-radius:
+      8px; box-shadow: 0 4px 18px rgba(0,0,0,.12); }\r
+
+      \    .hud { margin-top: .5rem; display: flex; justify-content: center;
+      align-items: center; gap: 2rem; font-size: 14px; }\r
+
+      \    .pill { display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: .25rem; padding: .5rem; border: 1px solid
+      currentColor; border-radius: 999px; min-height: 60px; }\r
+
+      \    .pill-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pill-value { font-size: 11px; }\r
+
+      \    .speed-control { display: flex; flex-direction: column; align-items:
+      center; gap: .25rem; padding: .5rem; border: 1px solid currentColor;
+      border-radius: 999px; }\r
+
+      \    .speed-control label { font-size: 12px; font-weight: bold; }\r
+
+      \    .speed-slider-row { display: flex; align-items: center; gap: .5rem;
+      }\r
+
+      \    .speed-control input[type=\"range\"] { width: 80px; height: 20px; }\r
+
+      \    .speed-emoji { font-size: 16px; }\r
+
+      \    .speed-value { font-size: 11px; }\r
+
+      \    .reset-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .reset-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .reset-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .reset-btn-emoji { font-size: 16px; }\r
+
+      \    .pause-btn { display: flex; flex-direction: column; align-items:
+      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
+      solid currentColor; border-radius: 999px; min-height: 60px; background:
+      none; color: inherit; cursor: pointer; font-family: inherit; }\r
+
+      \    .pause-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
+
+      \    .pause-btn-label { font-size: 12px; font-weight: bold; }\r
+
+      \    .pause-btn-emoji { font-size: 16px; }\r
+
+      \  </style>\r
+
+      </head>\r
+
+      <body>\r
+
+      \  <div class=\"wrap\">\r
+
+      \    <main>\r
+
+      \      <!-- p5 will attach here -->\r
+
+      \      <div id=\"p5-holder\"></div>\r
+
+      \      <div class=\"hud\">\r
+
+      \        <button class=\"pause-btn\" id=\"pause-btn\">\r
+
+      \          <span class=\"pause-btn-emoji\" id=\"pause-emoji\">⏸️</span>\r
+
+      \          <span class=\"pause-btn-label\"
+      id=\"pause-label\">Pause</span>\r
+
+      \        </button>\r
+
+      \        <button class=\"reset-btn\" id=\"reset-btn\">\r
+
+      \          <span class=\"reset-btn-emoji\">🔄</span>\r
+
+      \          <span class=\"reset-btn-label\">Reset</span>\r
+
+      \        </button>\r
+
+      \        <div class=\"speed-control\">\r
+
+      \          <label for=\"speed-slider\">Speed</label>\r
+
+      \          <div class=\"speed-slider-row\">\r
+
+      \            <span class=\"speed-emoji\">🐌</span>\r
+
+      \            <input type=\"range\" id=\"speed-slider\" min=\"0\"
+      max=\"100\" value=\"50\" step=\"1\">\r
+
+      \            <span class=\"speed-emoji\">🐇</span>\r
+
+      \          </div>\r
+
+      \          <span id=\"speed-value\" class=\"speed-value\">1.0x</span>\r
+
+      \        </div>\r
+
+      \        <div class=\"pill\" id=\"score-container\">\r
+
+      \          <span class=\"pill-label\">Score</span>\r
+
+      \          <span id=\"score\" class=\"pill-value\">0</span>\r
+
+      \        </div>\r
+
+      \      </div>\r
+
+      \    </main>\r
+
+      \  </div>\r
+
+      \r
+
+      \  <!-- p5.js (only external dependency) -->\r
+
+      \  <script
+      src=\"https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js\"></script>\r
+
+      \r
+
+      \  <!-- Game modules -->\r
+
+      \  <script src=\"settings.js\"></script>\r
+
+      \  <script src=\"/course1/snake.js\"></script>\r
+
+      \  <script src=\"/course1/player-ai.js\"></script>\r
+
+      \  <script src=\"enemy-ai.js\"></script>\r
+
+      \  <script src=\"/course1/game.js\"></script>\r
+
+      </body>\r
+
+      </html>\r\n"
+  - path: course1/unit1/lesson1/lessonpart5/enemy-ai.js
+    content: "function enemyAI(enemy) { \r
+
+      \  const playerHead = game.player.head();\r
+
+      \  const playerCurrentDir = game.player.currentDirection();\r
+
+      \  const targetAhead = { \r
+
+      \    x: playerHead.x + playerCurrentDir.x, \r
+
+      \    y: playerHead.y + playerCurrentDir.y \r
+
+      \  };\r
+
+      \r
+
+      \  const dirToCutOff = enemy.towards(targetAhead);\r
+
+      \r
+
+      \  return dirToCutOff;\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart5/settings.js
+    content: "// ------ Grid & Canvas ------\r
+
+      const GRID = {\r
+
+      \  cell: 20,\r
+
+      \  cols: 20,\r
+
+      \  rows: 20,\r
+
+      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
+
+      };\r
+
+      \r
+
+      // ------ Game Configuration ------\r
+
+      const GAME_CONFIG = {\r
+
+      \  // Series settings\r
+
+      \  series: {\r
+
+      \    enabled: true,              // Enable/disable series mode (ignored in
+      training mode)\r
+
+      \    winsToWin: 3,               // First to X wins\r
+
+      \    resetBetweenGames: true     // Whether to reset the canvas between
+      games\r
+
+      \  },\r
+
+      \  // Training mode setting\r
+
+      \  trainingMode: false,          // Whether we're in training mode (no
+      enemy, series disabled)\r
+
+      };\r
+
+      \r
+
+      // ------ Player Configuration ------\r
+
+      const PLAYER_CONFIG = {\r
+
+      \  id: 'SnakeBot',\r
+
+      \  start: { x: 3, y: 10 },\r
+
+      \  color: '#3b82f6',\r
+
+      \  size: 3,\r
+
+      \  direction: { x: 1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Food Configuration ------\r
+
+      const FOOD_CONFIG = {\r
+
+      \  foodCount: 1,\r
+
+      \  poisonCount: 0,\r
+
+      \  foodColor: '#22c55e',\r
+
+      \  poisonColor: '#9333ea'\r
+
+      };\r
+
+      \r
+
+      // ------ Enemy Configuration ------\r
+
+      const ENEMY_CONFIG = {\r
+
+      \  id: 'Bulldozer',\r
+
+      \  start: { x: 16, y: 10 },\r
+
+      \  color: '#f58c0bff',\r
+
+      \  size: 6,\r
+
+      \  direction: { x: -1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Speed Configuration ------\r
+
+      const SPEED_CONFIG = {\r
+
+      \  get playerBaseMs() { return PLAYER_CONFIG.baseMs; }, // Reference
+      player speed from PLAYER_CONFIG\r
+
+      \  get enemyBaseMs() { return ENEMY_CONFIG.baseMs; }, // Reference enemy
+      speed from ENEMY_CONFIG\r
+
+      \  minMs: 10,\r
+
+      \  maxMs: 1000,\r
+
+      \  defaultScale: 1.0\r
+
+      };\r
+
+      \r
+
+      // Make all configs globally accessible\r
+
+      window.GRID = GRID;\r
+
+      window.GAME_CONFIG = GAME_CONFIG;\r
+
+      window.PLAYER_CONFIG = PLAYER_CONFIG;\r
+
+      window.FOOD_CONFIG = FOOD_CONFIG;\r
+
+      window.ENEMY_CONFIG = ENEMY_CONFIG;\r
+
+      window.SPEED_CONFIG = SPEED_CONFIG;"
+  - path: course1/unit1/lesson1/lessonpart5/prompt.md
+    content: >-
+      <!-- 🐍 COACH'S CORNER 🐍
+          Write clear, simple instructions for SnakeBot to follow below.
+          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
+      -->
   - path: course1/unit1/lesson1/lessonpart3/enemy-ai.js
     content: "function enemyAI(player) { \r
 
@@ -5755,348 +6096,7 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
-  - path: course1/unit1/lesson1/lessonpart5/index.html
-    content: "<!DOCTYPE html>\r
-
-      <html lang=\"en\">\r
-
-      <head>\r
-
-      \  <meta charset=\"utf-8\" />\r
-
-      \  <title>Two-Snake p5.js</title>\r
-
-      \  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"
-      />\r
-
-      \  <style>\r
-
-      \    /* Keep the container small for students on small screens */\r
-
-      \    :root { color-scheme: light dark; }\r
-
-      \    body { margin: 0; font-family: system-ui, Arial, sans-serif; display:
-      grid; place-items: center; min-height: 100vh; }\r
-
-      \    .wrap { width: 95vw; max-width: 460px; margin: 0 auto; }\r
-
-      \    #game { width: 100%; height: auto; display: block; border-radius:
-      8px; box-shadow: 0 4px 18px rgba(0,0,0,.12); }\r
-
-      \    .hud { margin-top: .5rem; display: flex; justify-content: center;
-      align-items: center; gap: 2rem; font-size: 14px; }\r
-
-      \    .pill { display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: .25rem; padding: .5rem; border: 1px solid
-      currentColor; border-radius: 999px; min-height: 60px; }\r
-
-      \    .pill-label { font-size: 12px; font-weight: bold; }\r
-
-      \    .pill-value { font-size: 11px; }\r
-
-      \    .speed-control { display: flex; flex-direction: column; align-items:
-      center; gap: .25rem; padding: .5rem; border: 1px solid currentColor;
-      border-radius: 999px; }\r
-
-      \    .speed-control label { font-size: 12px; font-weight: bold; }\r
-
-      \    .speed-slider-row { display: flex; align-items: center; gap: .5rem;
-      }\r
-
-      \    .speed-control input[type=\"range\"] { width: 80px; height: 20px; }\r
-
-      \    .speed-emoji { font-size: 16px; }\r
-
-      \    .speed-value { font-size: 11px; }\r
-
-      \    .reset-btn { display: flex; flex-direction: column; align-items:
-      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
-      solid currentColor; border-radius: 999px; min-height: 60px; background:
-      none; color: inherit; cursor: pointer; font-family: inherit; }\r
-
-      \    .reset-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
-
-      \    .reset-btn-label { font-size: 12px; font-weight: bold; }\r
-
-      \    .reset-btn-emoji { font-size: 16px; }\r
-
-      \    .pause-btn { display: flex; flex-direction: column; align-items:
-      center; justify-content: center; gap: .25rem; padding: .5rem; border: 1px
-      solid currentColor; border-radius: 999px; min-height: 60px; background:
-      none; color: inherit; cursor: pointer; font-family: inherit; }\r
-
-      \    .pause-btn:hover { background: rgba(255, 255, 255, 0.1); }\r
-
-      \    .pause-btn-label { font-size: 12px; font-weight: bold; }\r
-
-      \    .pause-btn-emoji { font-size: 16px; }\r
-
-      \  </style>\r
-
-      </head>\r
-
-      <body>\r
-
-      \  <div class=\"wrap\">\r
-
-      \    <main>\r
-
-      \      <!-- p5 will attach here -->\r
-
-      \      <div id=\"p5-holder\"></div>\r
-
-      \      <div class=\"hud\">\r
-
-      \        <button class=\"pause-btn\" id=\"pause-btn\">\r
-
-      \          <span class=\"pause-btn-emoji\" id=\"pause-emoji\">⏸️</span>\r
-
-      \          <span class=\"pause-btn-label\"
-      id=\"pause-label\">Pause</span>\r
-
-      \        </button>\r
-
-      \        <button class=\"reset-btn\" id=\"reset-btn\">\r
-
-      \          <span class=\"reset-btn-emoji\">🔄</span>\r
-
-      \          <span class=\"reset-btn-label\">Reset</span>\r
-
-      \        </button>\r
-
-      \        <div class=\"speed-control\">\r
-
-      \          <label for=\"speed-slider\">Speed</label>\r
-
-      \          <div class=\"speed-slider-row\">\r
-
-      \            <span class=\"speed-emoji\">🐌</span>\r
-
-      \            <input type=\"range\" id=\"speed-slider\" min=\"0\"
-      max=\"100\" value=\"50\" step=\"1\">\r
-
-      \            <span class=\"speed-emoji\">🐇</span>\r
-
-      \          </div>\r
-
-      \          <span id=\"speed-value\" class=\"speed-value\">1.0x</span>\r
-
-      \        </div>\r
-
-      \        <div class=\"pill\" id=\"score-container\">\r
-
-      \          <span class=\"pill-label\">Score</span>\r
-
-      \          <span id=\"score\" class=\"pill-value\">0</span>\r
-
-      \        </div>\r
-
-      \      </div>\r
-
-      \    </main>\r
-
-      \  </div>\r
-
-      \r
-
-      \  <!-- p5.js (only external dependency) -->\r
-
-      \  <script
-      src=\"https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js\"></script>\r
-
-      \r
-
-      \  <!-- Game modules -->\r
-
-      \  <script src=\"settings.js\"></script>\r
-
-      \  <script src=\"/course1/snake.js\"></script>\r
-
-      \  <script src=\"/course1/player-ai.js\"></script>\r
-
-      \  <script src=\"enemy-ai.js\"></script>\r
-
-      \  <script src=\"/course1/game.js\"></script>\r
-
-      </body>\r
-
-      </html>\r\n"
-  - path: course1/unit1/lesson1/lessonpart5/enemy-ai.js
-    content: "function enemyAI(enemy) { \r
-
-      \  const playerHead = game.player.head();\r
-
-      \  const playerCurrentDir = game.player.currentDirection();\r
-
-      \  const targetAhead = { \r
-
-      \    x: playerHead.x + playerCurrentDir.x, \r
-
-      \    y: playerHead.y + playerCurrentDir.y \r
-
-      \  };\r
-
-      \r
-
-      \  const dirToCutOff = enemy.towards(targetAhead);\r
-
-      \r
-
-      \  return dirToCutOff;\r
-
-      }\r\n"
-  - path: course1/unit1/lesson1/lessonpart5/settings.js
-    content: "// ------ Grid & Canvas ------\r
-
-      const GRID = {\r
-
-      \  cell: 20,\r
-
-      \  cols: 20,\r
-
-      \  rows: 20,\r
-
-      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
-
-      };\r
-
-      \r
-
-      // ------ Game Configuration ------\r
-
-      const GAME_CONFIG = {\r
-
-      \  // Series settings\r
-
-      \  series: {\r
-
-      \    enabled: true,              // Enable/disable series mode (ignored in
-      training mode)\r
-
-      \    winsToWin: 3,               // First to X wins\r
-
-      \    resetBetweenGames: true     // Whether to reset the canvas between
-      games\r
-
-      \  },\r
-
-      \  // Training mode setting\r
-
-      \  trainingMode: false,          // Whether we're in training mode (no
-      enemy, series disabled)\r
-
-      };\r
-
-      \r
-
-      // ------ Player Configuration ------\r
-
-      const PLAYER_CONFIG = {\r
-
-      \  id: 'SnakeBot',\r
-
-      \  start: { x: 3, y: 10 },\r
-
-      \  color: '#3b82f6',\r
-
-      \  size: 3,\r
-
-      \  direction: { x: 1, y: 0 },\r
-
-      \  baseMs: 200\r
-
-      };\r
-
-      \r
-
-      // ------ Food Configuration ------\r
-
-      const FOOD_CONFIG = {\r
-
-      \  foodCount: 1,\r
-
-      \  poisonCount: 0,\r
-
-      \  foodColor: '#22c55e',\r
-
-      \  poisonColor: '#9333ea'\r
-
-      };\r
-
-      \r
-
-      // ------ Enemy Configuration ------\r
-
-      const ENEMY_CONFIG = {\r
-
-      \  id: 'Bulldozer',\r
-
-      \  start: { x: 16, y: 10 },\r
-
-      \  color: '#f58c0bff',\r
-
-      \  size: 6,\r
-
-      \  direction: { x: -1, y: 0 },\r
-
-      \  baseMs: 200\r
-
-      };\r
-
-      \r
-
-      // ------ Speed Configuration ------\r
-
-      const SPEED_CONFIG = {\r
-
-      \  get playerBaseMs() { return PLAYER_CONFIG.baseMs; }, // Reference
-      player speed from PLAYER_CONFIG\r
-
-      \  get enemyBaseMs() { return ENEMY_CONFIG.baseMs; }, // Reference enemy
-      speed from ENEMY_CONFIG\r
-
-      \  minMs: 10,\r
-
-      \  maxMs: 1000,\r
-
-      \  defaultScale: 1.0\r
-
-      };\r
-
-      \r
-
-      // Make all configs globally accessible\r
-
-      window.GRID = GRID;\r
-
-      window.GAME_CONFIG = GAME_CONFIG;\r
-
-      window.PLAYER_CONFIG = PLAYER_CONFIG;\r
-
-      window.FOOD_CONFIG = FOOD_CONFIG;\r
-
-      window.ENEMY_CONFIG = ENEMY_CONFIG;\r
-
-      window.SPEED_CONFIG = SPEED_CONFIG;"
   - path: course1/unit1/lesson1/lessonpart3/prompt.md
-    content: >-
-      <!-- 🐍 COACH'S CORNER 🐍
-          Write clear, simple instructions for SnakeBot to follow below.
-          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
-      -->
-  - path: course1/unit1/lesson1/lessonpart4/prompt.md
-    content: >-
-      <!-- 🐍 COACH'S CORNER 🐍
-          Write clear, simple instructions for SnakeBot to follow below.
-          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
-      -->
-  - path: course1/unit1/lesson1/lessonpart5/prompt.md
-    content: >-
-      <!-- 🐍 COACH'S CORNER 🐍
-          Write clear, simple instructions for SnakeBot to follow below.
-          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
-      -->
-  - path: course1/unit1/lesson1/lessonpart6/prompt.md
     content: >-
       <!-- 🐍 COACH'S CORNER 🐍
           Write clear, simple instructions for SnakeBot to follow below.
