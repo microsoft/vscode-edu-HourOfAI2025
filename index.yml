@@ -5849,5 +5849,138 @@ files:
           Write clear, simple instructions for SnakeBot to follow below.
           Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
       -->
+  - path: course1/unit1/lesson1/lessonpart7/settings.js
+    content: "// ------ Grid & Canvas ------\r
+
+      const GRID = {\r
+
+      \  cell: 20,\r
+
+      \  cols: 20,\r
+
+      \  rows: 20,\r
+
+      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
+
+      };\r
+
+      \r
+
+      // ------ Game Configuration ------\r
+
+      const GAME_CONFIG = {\r
+
+      \  // Series settings\r
+
+      \  series: {\r
+
+      \    enabled: true,              // Enable/disable series mode (ignored in
+      training mode)\r
+
+      \    winsToWin: 3,               // First to X wins\r
+
+      \    resetBetweenGames: true     // Whether to reset the canvas between
+      games\r
+
+      \  },\r
+
+      \  // Training mode setting\r
+
+      \  trainingMode: false,          // Whether we're in training mode (no
+      enemy, series disabled)\r
+
+      };\r
+
+      \r
+
+      // ------ Player Configuration ------\r
+
+      const PLAYER_CONFIG = {\r
+
+      \  id: 'SnakeBot',\r
+
+      \  start: { x: 3, y: 10 },\r
+
+      \  color: '#3b82f6',\r
+
+      \  size: 3,\r
+
+      \  direction: { x: 1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Food Configuration ------\r
+
+      const FOOD_CONFIG = {\r
+
+      \  foodCount: 1,\r
+
+      \  poisonCount: 0,\r
+
+      \  foodColor: '#22c55e',\r
+
+      \  poisonColor: '#9333ea'\r
+
+      };\r
+
+      \r
+
+      // ------ Enemy Configuration ------\r
+
+      const ENEMY_CONFIG = {\r
+
+      \  id: 'Serpent Supreme',\r
+
+      \  start: { x: 16, y: 10 },\r
+
+      \  color: '#e21c1cff',\r
+
+      \  size: 6,\r
+
+      \  direction: { x: -1, y: 0 },\r
+
+      \  baseMs: 200\r
+
+      };\r
+
+      \r
+
+      // ------ Speed Configuration ------\r
+
+      const SPEED_CONFIG = {\r
+
+      \  get playerBaseMs() { return PLAYER_CONFIG.baseMs; }, // Reference
+      player speed from PLAYER_CONFIG\r
+
+      \  get enemyBaseMs() { return ENEMY_CONFIG.baseMs; }, // Reference enemy
+      speed from ENEMY_CONFIG\r
+
+      \  minMs: 10,\r
+
+      \  maxMs: 1000,\r
+
+      \  defaultScale: 1.0\r
+
+      };\r
+
+      \r
+
+      // Make all configs globally accessible\r
+
+      window.GRID = GRID;\r
+
+      window.GAME_CONFIG = GAME_CONFIG;\r
+
+      window.PLAYER_CONFIG = PLAYER_CONFIG;\r
+
+      window.FOOD_CONFIG = FOOD_CONFIG;\r
+
+      window.ENEMY_CONFIG = ENEMY_CONFIG;\r
+
+      window.SPEED_CONFIG = SPEED_CONFIG;"
 units:
   - unit1/index.yml
