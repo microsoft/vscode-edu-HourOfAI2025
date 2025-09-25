@@ -1152,53 +1152,69 @@ files:
 
       </html>\r\n"
   - path: course1/unit1/lesson1/lessonpart7/enemy-ai.js
-    content: "// Eat safe food when it is within 4 spaces,\r
+    content: "function enemyAI(enemy) {\r
 
-      // otherwise move at random.\r
+      \  // Strategy: Rotate randomly between multiple strategies every N
+      ticks\r
 
-      function enemyAI(enemy) { \r
+      \  const TICKS_PER_STRATEGY = 100; // configurable tick duration\r
 
-      \  let direction = enemy.currentDirection();\r
+      \  if (!enemy.strategyTick) {\r
 
-      \r
+      \    enemy.strategyTick = 0;\r
 
-      \  const head = enemy.head();\r
-
-      \  const allFoods = game.foods;\r
-
-      \r
-
-      \  let closestSafeFood = null;\r
-
-      \  let minDistanceToSafeFood = Infinity;\r
-
-      \r
-
-      \  for (const foodItem of allFoods) {\r
-
-      \    if (foodItem.type !== 'poison') {\r
-
-      \      const distance = enemy.distanceTo(foodItem);\r
-
-      \      if (distance < minDistanceToSafeFood) {\r
-
-      \        minDistanceToSafeFood = distance;\r
-
-      \        closestSafeFood = foodItem;\r
-
-      \      }\r
-
-      \    }\r
+      \    enemy.currentStrategy = 0;\r
 
       \  }\r
 
       \r
 
-      \  if (closestSafeFood && minDistanceToSafeFood <= 4) {\r
+      \  enemy.strategyTick++;\r
 
-      \    direction = enemy.towards(closestSafeFood);\r
+      \r
 
-      \  } else {\r
+      \  // Change strategy after TICKS_PER_STRATEGY\r
+
+      \  if (enemy.strategyTick >= TICKS_PER_STRATEGY) {\r
+
+      \    enemy.strategyTick = 0;\r
+
+      \    // Randomly pick one of the strategies (0 = chase food, 1 = chase
+      enemy, 2 = random)\r
+
+      \    enemy.currentStrategy = Math.floor(Math.random() * 3);\r
+
+      \  }\r
+
+      \r
+
+      \  let direction = enemy.currentDirection();\r
+
+      \r
+
+      \  // Strategy 0: Chase after closest food\r
+
+      \  if (enemy.currentStrategy === 0) {\r
+
+      \    direction = enemy.towardsClosestFood();\r
+
+      \  }\r
+
+      \r
+
+      \  // Strategy 1: Chase after the enemy\r
+
+      \  if (enemy.currentStrategy === 1) {\r
+
+      \    direction = enemy.towardsEnemy();\r
+
+      \  }\r
+
+      \r
+
+      \  // Strategy 2: Move randomly in a safe direction\r
+
+      \  if (enemy.currentStrategy === 2) {\r
 
       \    direction = enemy.randomSafeDirection();\r
 
@@ -2693,275 +2709,6 @@ files:
           Write clear, simple instructions for SnakeBot to follow below.
           Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
       -->
-  - path: course1/unit1/lesson1/lessonpart9/failed.md
-    content: "### VB's\r
-
-      ```javascript\r
-
-      function playerAI(player) {\r
-
-      \  const gridCenter = {x: 10, y: 10};\r
-
-      \  const enemyClosestFood = game.enemy.getClosestFood();\r
-
-      \  const enemyDistanceToFood = game.enemy.distanceTo(enemyClosestFood);\r
-
-      \  const myDistanceToFood = player.distanceTo(player.getClosestFood());\r
-
-      \r
-
-      \  let direction;\r
-
-      \r
-
-      \  if (enemyDistanceToFood < myDistanceToFood) {\r
-
-      \    console.log(\"SnakeBot: Heading to the center, can't let the enemy
-      beat me!\");\r
-
-      \    direction = player.towards(gridCenter);\r
-
-      \  } else {\r
-
-      \    console.log(\"SnakeBot: Food is mine, full speed ahead!\");\r
-
-      \    direction = player.towardsClosestFood();\r
-
-      \  }\r
-
-      \r
-
-      \  if (player.willHitSelf(direction) || player.willHitEnemy(direction))
-      {\r
-
-      \    console.log(\"SnakeBot: Whoa, that was close! Finding a safer
-      path.\");\r
-
-      \    direction = player.randomSafeDirection();\r
-
-      \  }\r
-
-      \r
-
-      \  return direction;\r
-
-      }\r
-
-      ```\r
-
-      \r
-
-      \r
-
-      ### Ian's\r
-
-      ```javascript\r
-
-      function playerAI(player) { \r
-
-      \  let direction = player.towardsClosestFood();\r
-
-      \  const enemy = game.enemy;\r
-
-      \  const gridCenter = game.GRID.center;\r
-
-      \  const food = player.getClosestFood();\r
-
-      \r
-
-      \  if (player.willHitAnything(direction)) {\r
-
-      \    console.log(\"SnakeBot: Not crashing into walls, myself, or the
-      enemy!\");\r
-
-      \    direction = player.randomSafeDirection();\r
-
-      \  }\r
-
-      \r
-
-      \  if (player.distanceToWall(direction) <= 2) {\r
-
-      \    console.log(\"SnakeBot: Too close to the wall, steering clear!\");\r
-
-      \    direction = player.randomSafeDirection();\r
-
-      \  }\r
-
-      \r
-
-      \  const myDistance = player.distanceTo(food);\r
-
-      \  const enemyDistance = enemy.distanceTo(food);\r
-
-      \  if (enemyDistance <= myDistance) {\r
-
-      \    console.log(\"SnakeBot: Enemy's closer to food, I'm taking the
-      center!\");\r
-
-      \    direction = player.towards(gridCenter);\r
-
-      \  } else {\r
-
-      \    console.log(\"SnakeBot: Food looks safe, going for it!\");\r
-
-      \    direction = player.towardsClosestFood();\r
-
-      \  }\r
-
-      \r
-
-      \  return direction;\r
-
-      }\r
-
-      ```\r
-
-      \r
-
-      \r
-
-      \r
-
-      Ian feedback\r
-
-      ```\r
-
-      My prompt didn't seem to get that allFoods was an option (at least at the
-      first attempt). Only looked at closest food and checked if poison or
-      not.\r
-
-      ```\r
-
-      \r
-
-      \r
-
-      ### Tiana\r
-
-      \r
-
-      ```prompt\r
-
-      don't eat tainted morsels. Only eat food 5 times. cut off enemy \r
-
-      ```\r
-
-      \r
-
-      Problem: Not good code.\r
-
-      ```typescript\r
-
-      function playerAI(player) { \r
-
-      \  let direction = player.currentDirection();\r
-
-      \r
-
-      \  const closestSafeFood = player.towardsClosestFood();\r
-
-      \  const enemyDirection = player.towardsEnemy();\r
-
-      \r
-
-      \  if (player.size() <= 5) {\r
-
-      \    if (!player.willHitPoison(closestSafeFood)) {\r
-
-      \      console.log(\"SnakeBot: This morsel looks clean enough, I'm taking
-      it\");\r
-
-      \      direction = closestSafeFood;\r
-
-      \    }\r
-
-      \  } else {\r
-
-      \    console.log(\"SnakeBot: I've had my fill, time to hunt\");\r
-
-      \    direction = enemyDirection;\r
-
-      \  }\r
-
-      \r
-
-      \  return direction;\r
-
-      }\r
-
-      \r
-
-      ```\r
-
-      \r
-
-      \r
-
-      ```prompt\r
-
-      cut off bulldozer. avoid coiling into yourself.Do not go for food if it's
-      too close to an edge or corner\r
-
-      ```\r
-
-      \r
-
-      Problem: Distance to wall + does not change direction\r
-
-      \r
-
-      ```typescript\r
-
-      function playerAI(player) { \r
-
-      \  let direction = player.towardsEnemy();\r
-
-      \  console.log(\"SnakeBot: I'm cutting off the Bulldozer, watch
-      this!\");\r
-
-      \r
-
-      \  if (player.willHitSelf(direction)) {\r
-
-      \    console.log(\"SnakeBot: Yikes, I almost coiled into myself!\");\r
-
-      \    direction = player.randomSafeDirection();\r
-
-      \  }\r
-
-      \r
-
-      \  const closestFood = player.getClosestFood();\r
-
-      \  if (closestFood) {\r
-
-      \    const distanceToWall =
-      player.distanceToWall(player.towards(closestFood));\r
-
-      \    if (distanceToWall <= 2) {\r
-
-      \      console.log(\"SnakeBot: That food is too close to the edge, not
-      worth it!\");\r
-
-      \    } else {\r
-
-      \      console.log(\"SnakeBot: Food looks fine, but Bulldozer is my main
-      target!\");\r
-
-      \    }\r
-
-      \  }\r
-
-      \r
-
-      \  return direction;\r
-
-      }\r
-
-      \r
-
-      ```"
   - path: course1/unit1/lesson1/lessonpart4/index.html
     content: "<!DOCTYPE html>\r
 
