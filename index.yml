@@ -145,7 +145,65 @@ systemPrompts:
 
       - Only check for poison food if the user specifically requests it
 files:
-  - path: course1/unit1/lesson1/lessonpart4/index.html
+  - path: course1/unit1/lesson1/lessonpart3/enemy-ai.js
+    content: "function enemyAI(player) { \r
+
+      \  // Strategy: Move in a square pattern\r
+
+      \  // Start by moving right, then down, then left, then up, repeating\r
+
+      \  \r
+
+      \  const head = player.head();\r
+
+      \  const gridCols = game.GRID.cols;\r
+
+      \  const gridRows = game.GRID.rows;\r
+
+      \  \r
+
+      \  let direction = Direction.RIGHT;\r
+
+      \  \r
+
+      \  // If near the right edge, move down\r
+
+      \  if (head.x >= gridCols - 2) {\r
+
+      \    direction = Direction.DOWN;\r
+
+      \  }\r
+
+      \  // If near the bottom edge, move left\r
+
+      \  if (head.y >= gridRows - 2) {\r
+
+      \    direction = Direction.LEFT;\r
+
+      \  }\r
+
+      \  // If near the left edge, move up\r
+
+      \  if (head.x <= 1) {\r
+
+      \    direction = Direction.UP;\r
+
+      \  }\r
+
+      \  // If near the top edge, move right again\r
+
+      \  if (head.y <= 1) {\r
+
+      \    direction = Direction.RIGHT;\r
+
+      \  }\r
+
+      \  \r
+
+      \  return direction;\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart3/index.html
     content: "<!DOCTYPE html>\r
 
       <html lang=\"en\">\r
@@ -311,14 +369,6 @@ files:
       </body>\r
 
       </html>\r\n"
-  - path: course1/unit1/lesson1/lessonpart4/enemy-ai.js
-    content: "function enemyAI(enemy) { \r
-
-      \  const direction = enemy.towardsClosestFood();\r
-
-      \  return direction;\r
-
-      }\r\n"
   - path: course1/snake.js
     content: "class Snake {\r
 
@@ -3095,7 +3145,7 @@ files:
       \  }\r
 
       }\r\n"
-  - path: course1/unit1/lesson1/lessonpart4/settings.js
+  - path: course1/unit1/lesson1/lessonpart3/settings.js
     content: "// ------ Grid & Canvas ------\r
 
       const GRID = {\r
@@ -3179,15 +3229,15 @@ files:
 
       const ENEMY_CONFIG = {\r
 
-      \  id: 'Hungry Serpent',\r
+      \  id: 'TrainingBot',\r
 
       \  start: { x: 16, y: 10 },\r
 
-      \  color: '#f0a50eff',\r
+      \  color: '#ef4444',\r
 
-      \  size: 3,\r
+      \  size: 1,\r
 
-      \  direction: { x: -1, y: 0 },\r
+      \  direction: { x: 1, y: 0 },\r
 
       \  baseMs: 200\r
 
@@ -3228,7 +3278,7 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
-  - path: course1/unit1/lesson1/lessonpart4/prompt.md
+  - path: course1/unit1/lesson1/lessonpart3/prompt.md
     content: >-
       <!-- 🐍 COACH'S CORNER 🐍
           Write clear, simple instructions for SnakeBot to follow below.
@@ -5789,65 +5839,7 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
-  - path: course1/unit1/lesson1/lessonpart3/enemy-ai.js
-    content: "function enemyAI(player) { \r
-
-      \  // Strategy: Move in a square pattern\r
-
-      \  // Start by moving right, then down, then left, then up, repeating\r
-
-      \  \r
-
-      \  const head = player.head();\r
-
-      \  const gridCols = game.GRID.cols;\r
-
-      \  const gridRows = game.GRID.rows;\r
-
-      \  \r
-
-      \  let direction = Direction.RIGHT;\r
-
-      \  \r
-
-      \  // If near the right edge, move down\r
-
-      \  if (head.x >= gridCols - 2) {\r
-
-      \    direction = Direction.DOWN;\r
-
-      \  }\r
-
-      \  // If near the bottom edge, move left\r
-
-      \  if (head.y >= gridRows - 2) {\r
-
-      \    direction = Direction.LEFT;\r
-
-      \  }\r
-
-      \  // If near the left edge, move up\r
-
-      \  if (head.x <= 1) {\r
-
-      \    direction = Direction.UP;\r
-
-      \  }\r
-
-      \  // If near the top edge, move right again\r
-
-      \  if (head.y <= 1) {\r
-
-      \    direction = Direction.RIGHT;\r
-
-      \  }\r
-
-      \  \r
-
-      \  return direction;\r
-
-      }\r\n"
-  - path: course1/unit1/lesson1/lessonpart3/index.html
+  - path: course1/unit1/lesson1/lessonpart4/index.html
     content: "<!DOCTYPE html>\r
 
       <html lang=\"en\">\r
@@ -6013,7 +6005,15 @@ files:
       </body>\r
 
       </html>\r\n"
-  - path: course1/unit1/lesson1/lessonpart3/settings.js
+  - path: course1/unit1/lesson1/lessonpart4/enemy-ai.js
+    content: "function enemyAI(enemy) { \r
+
+      \  const direction = enemy.towardsClosestFood();\r
+
+      \  return direction;\r
+
+      }\r\n"
+  - path: course1/unit1/lesson1/lessonpart4/settings.js
     content: "// ------ Grid & Canvas ------\r
 
       const GRID = {\r
@@ -6097,15 +6097,15 @@ files:
 
       const ENEMY_CONFIG = {\r
 
-      \  id: 'TrainingBot',\r
+      \  id: 'Hungry Serpent',\r
 
       \  start: { x: 16, y: 10 },\r
 
-      \  color: '#ef4444',\r
+      \  color: '#f0a50eff',\r
 
-      \  size: 1,\r
+      \  size: 3,\r
 
-      \  direction: { x: 1, y: 0 },\r
+      \  direction: { x: -1, y: 0 },\r
 
       \  baseMs: 200\r
 
@@ -6146,7 +6146,7 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
-  - path: course1/unit1/lesson1/lessonpart3/prompt.md
+  - path: course1/unit1/lesson1/lessonpart4/prompt.md
     content: >-
       <!-- 🐍 COACH'S CORNER 🐍
           Write clear, simple instructions for SnakeBot to follow below.
