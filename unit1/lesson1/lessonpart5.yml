@@ -20,7 +20,7 @@ content: |+
 
   > \[!TIP]
   > Prompt Challenge Instructions
-  > Start by start by testing your current strategy against your opponent. Click the ✨ button to generate code and see your strategy in action!. If the strategy doesn't work, modify your prompt in the `prompt.md` file. You’ll see the generated code appear in the `player-ai.js` file.
+  > Start by testing your current strategy against your opponent. Click the ✨ button to generate code and see your strategy in action!. If the strategy doesn't work, modify your prompt in the `prompt.md` file. You’ll see the generated code appear in the `player-ai.js` file.
 
 showEditor: true
 showExplorer: true
