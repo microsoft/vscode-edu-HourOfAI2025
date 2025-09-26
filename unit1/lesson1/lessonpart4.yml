@@ -29,12 +29,12 @@ content: |+
 showEditor: true
 showExplorer: true
 editors:
+  - course1/unit1/lesson1/lessonpart4/prompt.md
   - course1/unit1/lesson1/lessonpart4/index.html
   - course1/unit1/lesson1/lessonpart4/enemy-ai.js
   - course1/snake.js
   - course1/game.js
   - course1/unit1/lesson1/lessonpart4/settings.js
-  - course1/unit1/lesson1/lessonpart4/prompt.md
   - course1/player-ai.js
 hiddenEditors:
   - course1/unit1/lesson1/lessonpart4/index.html
