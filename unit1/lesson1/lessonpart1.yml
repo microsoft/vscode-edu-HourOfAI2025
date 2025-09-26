@@ -12,20 +12,23 @@ content: |
   *SnakeBot grins (well, as much as an AI snake can grin).*\
   **SnakeBot**: “Here’s the deal: We’re up against some of the toughest AI snakes in the world. Our mission? Build the best Snake strategies using the power of prompts! That means you tell me what you want, and I’ll turn it into code. Sound good? Great, let's get started!"
 
-  *SnakeBot hands you a flyer*
+  *SnakeBot hands you a flyer*\
   **SnakeBot**: "First things first, let's get you familiar with the rules of the tournament."
 
   > \[!TIP]
-  > **SLITHER SLAM**
-  > Slither Slam is a tournament based on the classic game of Snake, but with a twist! Instead of one snake chasing after food, two snakes will face head to head to see who survives longest!
+  > **WELCOME TO SLITHER SLAM**
+  >
+  > Slither Slam is a tournament based on the classic game of Snake, but with a twist! Instead of one snake chasing after food, two snakes will face head to head to fight for food and see who survives longest!
   >
   > **RULES**
+  >
   > * Eat food to grow
   > * Avoid running into walls
   > * Avoid running into yourself
   > * Avoid running into enemy snakes
   > * **Win a round** by being last snake slithering
   > * **Win the match** by winning 3 rounds
+  >
   > **SLITHER. OR BE SLAMMED**
 
   **SnakeBot**: "Survive longer than your opponent to win the round. First to win 3 rounds moves up the bracket. Easy enough, right? Enough reading, Let's get ready to start playing!"
