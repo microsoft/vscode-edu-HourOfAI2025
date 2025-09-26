@@ -1,6 +1,35 @@
 # yaml-language-server: $schema=https://vscodeedu.com/assets/schema/course-v2.schema.json
 id: lesson1
 title: Lesson 1
+description: Explore Artificial Intelligence and prompt engineering by competing
+  in a fast-paced Snake game tournament!
+objectives: >-
+  The Slither Slam lesson is designed to be a fun introductory experience with
+  Game AI algorithms, prompt engineering and code generation.  In this activity,
+  you will code your own “SnakeBot” to compete against other AI snake algorithms
+  in a tournament.  
+
+  You will learn about AI concepts such as:
+
+  - What is Artificial Intelligence
+
+  - Large Language Models (LLM)
+
+  - Prompt Engineering best practices
+
+  - Game AI and autonomous algorithms
+
+  - AI Agents
+
+  - Testing and debugging
+standards:
+  - csta-student:3a-ap-21
+  - csta-student:3a-ap-16
+  - csta-student:3b-ap-16
+  - csta-student:3b-ap-11
+  - csta-student:3b-ap-22
+  - csta-student:3b-ap-09
+  - csta-student:3b-ap-08
 lessonParts:
   - lessonpart1.yml
   - lessonpart2.yml
