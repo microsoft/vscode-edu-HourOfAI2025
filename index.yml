@@ -145,6 +145,12 @@ systemPrompts:
 
       - Only check for poison food if the user specifically requests it
 files:
+  - path: course1/unit1/lesson1/lessonpart3/prompt.md
+    content: >-
+      <!-- 🐍 COACH'S CORNER 🐍
+          Write clear, simple instructions for SnakeBot to follow below.
+          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
+      -->
   - path: course1/unit1/lesson1/lessonpart3/enemy-ai.js
     content: "function enemyAI(player) { \r
 
@@ -3278,12 +3284,6 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
-  - path: course1/unit1/lesson1/lessonpart3/prompt.md
-    content: >-
-      <!-- 🐍 COACH'S CORNER 🐍
-          Write clear, simple instructions for SnakeBot to follow below.
-          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
-      -->
   - path: course1/player-ai.js
     content: "function playerAI(enemy) {\r
 
@@ -3292,6 +3292,12 @@ files:
       }\r
 
       \r\n"
+  - path: course1/unit1/lesson1/lessonpart6/prompt.md
+    content: >-
+      <!-- 🐍 COACH'S CORNER 🐍
+          Write clear, simple instructions for SnakeBot to follow below.
+          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
+      -->
   - path: course1/unit1/lesson1/lessonpart6/index.html
     content: "<!DOCTYPE html>\r
 
@@ -3649,7 +3655,7 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
-  - path: course1/unit1/lesson1/lessonpart6/prompt.md
+  - path: course1/unit1/lesson1/lessonpart5/prompt.md
     content: >-
       <!-- 🐍 COACH'S CORNER 🐍
           Write clear, simple instructions for SnakeBot to follow below.
@@ -3978,7 +3984,7 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
-  - path: course1/unit1/lesson1/lessonpart5/prompt.md
+  - path: course1/unit1/lesson1/lessonpart7/prompt.md
     content: >-
       <!-- 🐍 COACH'S CORNER 🐍
           Write clear, simple instructions for SnakeBot to follow below.
@@ -5700,12 +5706,6 @@ files:
       \  }\r
 
       }\r\n"
-  - path: course1/unit1/lesson1/lessonpart7/prompt.md
-    content: >-
-      <!-- 🐍 COACH'S CORNER 🐍
-          Write clear, simple instructions for SnakeBot to follow below.
-          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
-      -->
   - path: course1/unit1/lesson1/lessonpart7/settings.js
     content: "// ------ Grid & Canvas ------\r
 
@@ -5839,6 +5839,12 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
+  - path: course1/unit1/lesson1/lessonpart4/prompt.md
+    content: >-
+      <!-- 🐍 COACH'S CORNER 🐍
+          Write clear, simple instructions for SnakeBot to follow below.
+          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
+      -->
   - path: course1/unit1/lesson1/lessonpart4/index.html
     content: "<!DOCTYPE html>\r
 
@@ -6146,11 +6152,5 @@ files:
       window.ENEMY_CONFIG = ENEMY_CONFIG;\r
 
       window.SPEED_CONFIG = SPEED_CONFIG;"
-  - path: course1/unit1/lesson1/lessonpart4/prompt.md
-    content: >-
-      <!-- 🐍 COACH'S CORNER 🐍
-          Write clear, simple instructions for SnakeBot to follow below.
-          Then press the ✨ Run Prompt button in the top right of this window to turn your strategy into code!
-      -->
 units:
   - unit1/index.yml
