@@ -827,7 +827,11 @@ files:
 
       \  if (!isBackward || this.body.length <= 1) {\r
 
-      \    return coordsToDirection(directDirection);\r
+      \    if (!this.willHitAnything(directDirection)) {\r
+
+      \      return coordsToDirection(directDirection);\r
+
+      \    }\r
 
       \  }\r
 
@@ -988,13 +992,51 @@ files:
 
       \    }\r
 
-      \    const dir = this.towards(otherSnake.head());\r
+      \    const allDirections = new Set([Direction.UP, Direction.DOWN,
+      Direction.LEFT, Direction.RIGHT]);\r
 
-      \    const dirCoords = directionToCoords(dir);\r
+      \r
 
-      \    const reversedCoords = { x: -dirCoords.x, y: -dirCoords.y };\r
+      \    // remove direction towards enemy\r
 
-      \    return coordsToDirection(reversedCoords);\r
+      \    const towardsEnemyDir = this.towards(otherSnake.head());\r
+
+      \    const towardsEnemyDirCoords = directionToCoords(towardsEnemyDir);\r
+
+      \    allDirections.delete(towardsEnemyDir);\r
+
+      \r
+
+      \    // remove direction that would reverse the snake\r
+
+      \    const reversedCoords = { x: -towardsEnemyDirCoords.x, y:
+      -towardsEnemyDirCoords.y };\r
+
+      \    const reversedDir = coordsToDirection(reversedCoords);\r
+
+      \    allDirections.delete(reversedDir);\r
+
+      \r
+
+      \    // From remaining directions, pick a random safe one\r
+
+      \    const safeDirections = Array.from(allDirections).filter(d =>
+      this.isPredictablySafe(d));\r
+
+      \    if (safeDirections.length > 0) {\r
+
+      \      const randomIndex = Math.floor(Math.random() *
+      safeDirections.length);\r
+
+      \      return safeDirections[randomIndex];\r
+
+      \    }\r
+
+      \r
+
+      \    // If no safe directions found, continue current direction\r
+
+      \    return this.currentDirection();\r
 
       \  }\r
 
@@ -1196,7 +1238,7 @@ files:
 
       \  \r
 
-      \  willHitPoison(direction) {\r
+      \  willHitPoisonFood(direction) {\r
 
       \    if (!game.foods || game.foods.length === 0) return false;\r
 
@@ -1230,7 +1272,7 @@ files:
 
       \           this.willHitEnemy(direction) ||\r
 
-      \           this.willHitPoison(direction);\r
+      \           this.willHitPoisonFood(direction);\r
 
       \  }\r
 
@@ -1474,12 +1516,6 @@ files:
       \    pauseBtn.blur();\r
 
       \  });\r
-
-      \  \r
-
-      \  // Initialize button states\r
-
-      \  updateResetButton();\r
 
       \  \r
 
@@ -2363,7 +2399,7 @@ files:
 
       \  // Make the overlay taller for series information\r
 
-      \  const overlayHeight = seriesState.active ? 200 : 120;\r
+      \  const overlayHeight = seriesState.active ? 150 : 120;\r
 
       \  rect(0, height/2 - overlayHeight/2, width, overlayHeight);\r
 
@@ -2524,8 +2560,7 @@ files:
 
       \      textSize(20);\r
 
-      \      text(line4, width/2, height/2 - overlayHeight/2 + 120); // Series
-      winner\r
+      \      text(line4, width/2, height/2 + 5); // Series winner\r
 
       \    }\r
 
@@ -2538,7 +2573,7 @@ files:
       \    textAlign(LEFT, CENTER);\r
 
       \    text(instructionsText, width/2 - 60, height/2 + overlayHeight/2 -
-      40);\r
+      30);\r
 
       \    textAlign(CENTER, CENTER);\r
 
@@ -2818,8 +2853,6 @@ files:
 
       \  updatePauseButton();\r
 
-      \  updateResetButton(); // Update button based on pre-round screen state\r
-
       \r
 
       \  loop();\r
@@ -2830,26 +2863,7 @@ files:
 
       function resetGame() {\r
 
-      \  // If we're on the pre-round screen, just dismiss it and start
-      playing\r
-
-      \  if (preRoundScreen) {\r
-
-      \    preRoundScreen = false;\r
-
-      \    updateResetButton();\r
-
-      \    return;\r
-
-      \  }\r
-
-      \  \r
-
-      \  // Otherwise, reset the entire game\r
-
       \  startNewGame(false); // false = don't continue series, start fresh\r
-
-      \  // Button will be updated by startNewGame() -> updateResetButton()\r
 
       }\r
 
@@ -2915,35 +2929,6 @@ files:
       \    pauseEmoji.textContent = '⏸️';\r
 
       \    pauseLabel.textContent = 'Pause';\r
-
-      \  }\r
-
-      }\r
-
-      \r
-
-      function updateResetButton() {\r
-
-      \  const resetEmoji = document.querySelector('.reset-btn-emoji');\r
-
-      \  const resetLabel = document.querySelector('.reset-btn-label');\r
-
-      \  \r
-
-      \  // Show \"Start\" when on pre-round screen (rules screen), otherwise
-      \"Reset\"\r
-
-      \  if (preRoundScreen) {\r
-
-      \    resetEmoji.textContent = '▶️';\r
-
-      \    resetLabel.textContent = 'Start';\r
-
-      \  } else {\r
-
-      \    resetEmoji.textContent = '🔄';\r
-
-      \    resetLabel.textContent = 'Reset';\r
 
       \  }\r
 
@@ -3041,21 +3026,21 @@ files:
 
       \  textSize(16);\r
 
-      \  text('Round Winner: Last snake standing', width/2, height/2 -
+      \  text('Win a Round: Opponent crashes first', width/2, height/2 -
       boxHeight/2 + 80 + baseYOffset);\r
 
       \r
 
       \  textSize(16);\r
 
-      \  text(`Series Winner: First to ${GAME_CONFIG.series.winsToWin} round
+      \  text(`Win the Game: First to ${GAME_CONFIG.series.winsToWin} round
       wins`, width/2, height/2 - boxHeight/2 + 100 + baseYOffset);\r
 
       \r
 
       \  textSize(16);\r
 
-      \  text('You Crash If You Hit:', width/2, height/2 - boxHeight/2 + 120 +
+      \  text('Lose If You Crash Into:', width/2, height/2 - boxHeight/2 + 120 +
       baseYOffset);\r
 
       \r
@@ -3095,9 +3080,6 @@ files:
       \      // Dismiss pre-round screen on Enter/Return\r
 
       \      preRoundScreen = false;\r
-
-      \      updateResetButton(); // Update button when leaving pre-round
-      screen\r
 
       \      return;\r
 
