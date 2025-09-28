@@ -76,6 +76,38 @@ questionGroups:
           - id: "3"
             value: A type of error that occurs when SnakeBot malfunctions.
             explanation: A prompt is not an error; it's an instruction for SnakeBot.
+  - id: "2"
+    questions:
+      - id: "1"
+        type: multiple
+        content: What code would be part of SnakeBot's algorithm for the "Go after food"
+          prompt?
+        options:
+          - id: "1"
+            value: Get food position
+            explanation: Correct! In order to turn SnakeBot towards food, we need to know
+              where that food is.
+            isCorrect: true
+          - id: "2"
+            value: Find direction from SnakeBot to food
+            explanation: Correct! Once we have the position of SnakeBot and the food, we can
+              figure out what direction SnakeBot needs to turn to move towards
+              that food.
+            isCorrect: true
+          - id: "3"
+            value: Move in the calculated direction
+            explanation: Correct! Once he direction is calculated, SnakeBot must finally
+              move in that direction.
+            isCorrect: true
+          - id: "4"
+            value: Check food distance
+            explanation: Food distance can be important, but you don't need the distance to
+              figure out the direction.
+          - id: "5"
+            value: Get SnakeBot's position
+            explanation: Correct! SnakeBot's direction is required to figure out how to turn
+              towards food.
+            isCorrect: true
 codePrompts:
   - systemPrompt: "1"
     promptFile: course1/unit1/lesson1/lessonpart3/prompt.md
