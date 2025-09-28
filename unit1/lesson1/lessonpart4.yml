@@ -42,6 +42,17 @@ hiddenEditors:
   - course1/snake.js
   - course1/game.js
   - course1/unit1/lesson1/lessonpart4/settings.js
+questionGroups:
+  - id: "1"
+    questions:
+      - id: "1"
+        type: reflection
+        content: What is The Hungry Serpent's strategy?
+  - id: "2"
+    questions:
+      - id: "1"
+        type: reflection
+        content: How does The Hungry Serpent beat SnakeBot?
 codePrompts:
   - systemPrompt: "1"
     promptFile: course1/unit1/lesson1/lessonpart4/prompt.md

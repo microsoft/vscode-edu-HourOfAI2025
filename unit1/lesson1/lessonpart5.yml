@@ -38,6 +38,17 @@ hiddenEditors:
   - course1/unit1/lesson1/lessonpart5/enemy-ai.js
   - course1/game.js
   - course1/unit1/lesson1/lessonpart5/settings.js
+questionGroups:
+  - id: "1"
+    questions:
+      - id: "1"
+        type: reflection
+        content: What is The Bulldozer's strategy?
+  - id: "2"
+    questions:
+      - id: "1"
+        type: reflection
+        content: How does The Bulldozer beat SnakeBot?
 codePrompts:
   - systemPrompt: "1"
     promptFile: course1/unit1/lesson1/lessonpart5/prompt.md
