@@ -38,6 +38,17 @@ hiddenEditors:
   - course1/unit1/lesson1/lessonpart7/enemy-ai.js
   - course1/unit1/lesson1/lessonpart7/game.js
   - course1/unit1/lesson1/lessonpart7/settings.js
+questionGroups:
+  - id: "1"
+    questions:
+      - id: "1"
+        type: reflection
+        content: What is Serpent Supreme's strategy?
+  - id: "2"
+    questions:
+      - id: "1"
+        type: reflection
+        content: How does Serpent Supreme beat SnakeBot?
 codePrompts:
   - systemPrompt: "1"
     promptFile: course1/unit1/lesson1/lessonpart7/prompt.md
