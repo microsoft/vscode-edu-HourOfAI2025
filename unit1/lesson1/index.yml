@@ -22,6 +22,14 @@ objectives: >-
   - AI Agents
 
   - Testing and debugging
+standards:
+  - csta-student:3b-ap-16
+  - csta-student:3b-ap-11
+  - csta-student:3b-ap-22
+  - csta-student:3b-ap-09
+  - csta-student:3b-ap-08
+  - csta-student:3a-ap-21
+  - csta-student:3a-ap-16
 lessonParts:
   - lessonpart1.yml
   - lessonpart2.yml
