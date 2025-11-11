@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://vscodeedu.com/assets/schema/course-v2.schema.json
 id: course1
-title: The Slither Slam (Beta)
+title: The Slither Slam
 level: beginner
 description: Explore Artificial Intelligence and prompt engineering by competing
   in a fast-paced Snake game tournament!
