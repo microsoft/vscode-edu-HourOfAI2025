@@ -4007,11 +4007,11 @@ files:
 
       \  cell: 20,\r
 
-      \  cols: 20,\r
+      \  cols: 18,\r
 
-      \  rows: 20,\r
+      \  rows: 18,\r
 
-      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
+      \  center: { x: Math.floor(18 / 2), y: Math.floor(18 / 2) }\r
 
       };\r
 
@@ -4025,8 +4025,8 @@ files:
 
       \  series: {\r
 
-      \    enabled: true,              // Enable/disable series mode (ignored in
-      training mode)\r
+      \    enabled: false,              // Enable/disable series mode (ignored
+      in training mode)\r
 
       \    winsToWin: 3,               // First to X wins\r
 
@@ -4037,7 +4037,7 @@ files:
 
       \  // Training mode setting\r
 
-      \  trainingMode: false,          // Whether we're in training mode (no
+      \  trainingMode: true,          // Whether we're in training mode (no
       enemy, series disabled)\r
 
       };\r
@@ -4088,11 +4088,11 @@ files:
 
       \  start: { x: 16, y: 10 },\r
 
-      \  color: '#ef4444',\r
+      \  color: '#03f1f9ff',\r
 
-      \  size: 1,\r
+      \  size: 3,\r
 
-      \  direction: { x: 1, y: 0 },\r
+      \  direction: { x: -1, y: 0 },\r
 
       \  baseMs: 200\r
 
