@@ -5769,27 +5769,21 @@ files:
   - path: course1/unit1/lesson1/lessonpart5/enemy-ai.js
     content: "function enemyAI(enemy) { \r
 
+      \  // Strategy: Always attack the enemy by moving towards where the enemy
+      is going\r
+
+      \  const playerDirection = game.player.dir;\r
+
       \  const playerHead = game.player.head();\r
 
-      \  const playerCurrentDir = game.player.currentDirection();\r
+      \  const target = {x: playerHead.x + playerDirection.x * 2, y:
+      playerHead.y + playerDirection.y * 2};\r
 
-      \  const targetAhead = { \r
+      \  const direction = enemy.towards(target);\r
 
-      \    x: playerHead.x + playerCurrentDir.x, \r
+      \  return direction;\r
 
-      \    y: playerHead.y + playerCurrentDir.y \r
-
-      \  };\r
-
-      \r
-
-      \  const dirToCutOff = enemy.towards(targetAhead);\r
-
-      \r
-
-      \  return dirToCutOff;\r
-
-      }\r\n"
+      }"
   - path: course1/unit1/lesson1/lessonpart5/settings.js
     content: "// ------ Grid & Canvas ------\r
 
@@ -5797,11 +5791,11 @@ files:
 
       \  cell: 20,\r
 
-      \  cols: 20,\r
+      \  cols: 18,\r
 
-      \  rows: 20,\r
+      \  rows: 18,\r
 
-      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
+      \  center: { x: Math.floor(18 / 2), y: Math.floor(18 / 2) }\r
 
       };\r
 
@@ -5878,7 +5872,7 @@ files:
 
       \  start: { x: 16, y: 10 },\r
 
-      \  color: '#f58c0bff',\r
+      \  color: '#f08605ff',\r
 
       \  size: 6,\r
 
