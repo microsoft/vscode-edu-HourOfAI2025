@@ -1391,6 +1391,15 @@ files:
 
       let canvasH = GRID.rows * GRID.cell;\r
 
+      const SLIDER_HEIGHT = 40;\r
+
+      const SCORE_BANNER_HEIGHT = 30;\r
+
+      const SLIDER_LEFT_OFFSET = 80; // Space for \"Speed: \" text\r
+
+      const TOTAL_CANVAS_HEIGHT = canvasH + SLIDER_HEIGHT +
+      SCORE_BANNER_HEIGHT;\r
+
       \r
 
       // ------ Series State ------\r
@@ -1421,10 +1430,6 @@ files:
 
       let allFood = []; // Array of all foods, foods[0] should always be food\r
 
-      let scoreEl;\r
-
-      let speedSlider, speedValue;\r
-
       let winner = null;\r
 
       let gameOver = false;\r
@@ -1432,6 +1437,17 @@ files:
       let gamePaused = false;\r
 
       let preRoundScreen = true; // Show pre-round instructions screen\r
+
+      let score = 0; // In-memory score\r
+
+      \r
+
+      // ------ In-canvas Speed Slider State ------\r
+
+      let sliderValue = 0; // 0-100, 0 is leftmost (1x speed), 100 is rightmost
+      (fastest)\r
+
+      let isDraggingSlider = false;\r
 
       \r
 
@@ -1487,7 +1503,7 @@ files:
 
       function setup() {\r
 
-      \  const c = createCanvas(canvasW, canvasH);\r
+      \  const c = createCanvas(canvasW, TOTAL_CANVAS_HEIGHT);\r
 
       \  c.parent('p5-holder');\r
 
@@ -1495,41 +1511,7 @@ files:
 
       \r
 
-      \  scoreEl = document.getElementById('score');\r
-
-      \  speedSlider = document.getElementById('speed-slider');\r
-
-      \  speedValue = document.getElementById('speed-value');\r
-
-      \  \r
-
-      \  speedSlider.addEventListener('input', updateSpeed);\r
-
-      \  \r
-
-      \  const resetBtn = document.getElementById('reset-btn');\r
-
-      \  resetBtn.addEventListener('click', resetGame);\r
-
-      \  \r
-
-      \  const pauseBtn = document.getElementById('pause-btn');\r
-
-      \  pauseBtn.addEventListener('click', () => {\r
-
-      \    togglePause();\r
-
-      \    // Remove focus to prevent spacebar from triggering button\r
-
-      \    pauseBtn.blur();\r
-
-      \  });\r
-
-      \  \r
-
-      \  // Initialize button states\r
-
-      \  updateResetButton();\r
+      \r
 
       \  \r
 
@@ -1545,7 +1527,37 @@ files:
 
       \  background('#0b0b0b');\r
 
+      \  \r
+
+      \  // Draw score banner at the top (always visible in series mode)\r
+
+      \  if (seriesState.active) {\r
+
+      \    drawScoreBanner();\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Translate canvas for all game elements below the score banner\r
+
+      \  push();\r
+
+      \  if (seriesState.active) {\r
+
+      \    translate(0, SCORE_BANNER_HEIGHT);\r
+
+      \  }\r
+
+      \  \r
+
       \  drawGrid();\r
+
+      \  \r
+
+      \  // Draw speed slider at the bottom (always visible)\r
+
+      \  drawSpeedSlider();\r
 
       \r
 
@@ -1560,6 +1572,8 @@ files:
       \      drawReplayFrame(currentFrame);\r
 
       \    }\r
+
+      \    pop(); // End translation before drawing controls\r
 
       \    drawReplayControls();\r
 
@@ -1792,6 +1806,10 @@ files:
       \    }\r
 
       \  }\r
+
+      \  \r
+
+      \  pop(); // End translation\r
 
       }\r
 
@@ -2155,7 +2173,7 @@ files:
 
       \    gameOver: gameOver,\r
 
-      \    score: scoreEl ? scoreEl.textContent : '0'\r
+      \    score: score.toString()\r
 
       \  };\r
 
@@ -2354,10 +2372,298 @@ files:
       \  strokeWeight(1);\r
 
       \  for (let x = 1; x < GRID.cols; x++) line(x * GRID.cell, 0, x *
-      GRID.cell, height);\r
+      GRID.cell, canvasH);\r
 
       \  for (let y = 1; y < GRID.rows; y++) line(0, y * GRID.cell, width, y *
       GRID.cell);\r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function drawScoreBanner() {\r
+
+      \  push();\r
+
+      \  // Draw background for score banner\r
+
+      \  noStroke();\r
+
+      \  fill(20, 20, 20);\r
+
+      \  rect(0, 0, canvasW, SCORE_BANNER_HEIGHT);\r
+
+      \  \r
+
+      \  // Draw separator line\r
+
+      \  stroke(255, 50);\r
+
+      \  strokeWeight(1);\r
+
+      \  line(0, SCORE_BANNER_HEIGHT, canvasW, SCORE_BANNER_HEIGHT);\r
+
+      \  \r
+
+      \  // Calculate layout\r
+
+      \  const winsToWin = GAME_CONFIG.series.winsToWin;\r
+
+      \  const squareSize = 16;\r
+
+      \  const trophySize = 16;\r
+
+      \  const trophySpacing = 18;\r
+
+      \  const colorSquareSpacing = 8;\r
+
+      \  const centerTrophySpacing = 10;\r
+
+      \  const fontSize = 16;\r
+
+      \  const textYOffset = 2;\r
+
+      \  \r
+
+      \  // Center trophy\r
+
+      \  noStroke();\r
+
+      \  fill(255, 200);\r
+
+      \  textSize(trophySize);\r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  text('🏆', canvasW / 2, SCORE_BANNER_HEIGHT / 2);\r
+
+      \  \r
+
+      \  // Player side (left) - SnakeBot\r
+
+      \  const playerSideX = canvasW / 2 - centerTrophySpacing - trophySize;\r
+
+      \  \r
+
+      \  // Draw player color square\r
+
+      \  fill(PLAYER_CONFIG.color);\r
+
+      \  noStroke();\r
+
+      \  rect(playerSideX - squareSize - colorSquareSpacing - (winsToWin *
+      trophySpacing) + 6, \r
+
+      \       SCORE_BANNER_HEIGHT / 2 - squareSize / 2, \r
+
+      \       squareSize, squareSize, 2);\r
+
+      \  \r
+
+      \  // Draw player name\r
+
+      \  fill(200, 200, 200);\r
+
+      \  textSize(fontSize);\r
+
+      \  textAlign(RIGHT, CENTER);\r
+
+      \  text(PLAYER_CONFIG.id, \r
+
+      \       playerSideX - squareSize - colorSquareSpacing - (winsToWin *
+      trophySpacing), \r
+
+      \       SCORE_BANNER_HEIGHT / 2 + textYOffset);\r
+
+      \  \r
+
+      \  // Draw player trophies (fill from left to right)\r
+
+      \  textSize(trophySize);\r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  for (let i = 0; i < winsToWin; i++) {\r
+
+      \    const x = playerSideX - (winsToWin - 1 - i) * trophySpacing + 8;\r
+
+      \    if (i < seriesState.playerWins) {\r
+
+      \      fill(0, 255, 0); // Green checkmark\r
+
+      \      text('✅', x, SCORE_BANNER_HEIGHT / 2);\r
+
+      \    } else {\r
+
+      \      fill(100, 100, 100); // Gray square\r
+
+      \      text('⬛', x, SCORE_BANNER_HEIGHT / 2);\r
+
+      \    }\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Enemy side (right) - Serpent Supreme\r
+
+      \  const enemySideX = canvasW / 2 + centerTrophySpacing + trophySize -
+      8;\r
+
+      \  \r
+
+      \  // Draw enemy trophies (fill from right to left)\r
+
+      \  textSize(trophySize);\r
+
+      \  textAlign(CENTER, CENTER);\r
+
+      \  for (let i = 0; i < winsToWin; i++) {\r
+
+      \    const x = enemySideX + i * trophySpacing;\r
+
+      \    // Check from the right: if (winsToWin - 1 - i) < enemyWins, then
+      this trophy should be green\r
+
+      \    if ((winsToWin - 1 - i) < seriesState.enemyWins) {\r
+
+      \      fill(0, 255, 0); // Green checkmark\r
+
+      \      text('✅', x, SCORE_BANNER_HEIGHT / 2);\r
+
+      \    } else {\r
+
+      \      fill(100, 100, 100); // Gray square\r
+
+      \      text('⬛', x, SCORE_BANNER_HEIGHT / 2);\r
+
+      \    }\r
+
+      \  }\r
+
+      \  \r
+
+      \  // Draw enemy name\r
+
+      \  fill(200, 200, 200);\r
+
+      \  textSize(fontSize);\r
+
+      \  textAlign(LEFT, CENTER);\r
+
+      \  text('Opponent', \r
+
+      \       enemySideX + (winsToWin * trophySpacing) + colorSquareSpacing +
+      squareSize + 5, \r
+
+      \       SCORE_BANNER_HEIGHT / 2 + textYOffset);\r
+
+      \  \r
+
+      \  // Draw enemy color square\r
+
+      \  fill(ENEMY_CONFIG.color);\r
+
+      \  noStroke();\r
+
+      \  rect(enemySideX + (winsToWin * trophySpacing) + colorSquareSpacing, \r
+
+      \       SCORE_BANNER_HEIGHT / 2 - squareSize / 2, \r
+
+      \       squareSize, squareSize, 2);\r
+
+      \  \r
+
+      \  pop();\r
+
+      }\r
+
+      \r
+
+      function drawSpeedSlider() {\r
+
+      \  const sliderY = canvasH;\r
+
+      \  const sliderMargin = 15;\r
+
+      \  const sliderBarWidth = canvasW - SLIDER_LEFT_OFFSET - sliderMargin;\r
+
+      \  const sliderBarHeight = 8;\r
+
+      \  const sliderBarX = SLIDER_LEFT_OFFSET;\r
+
+      \  const sliderBarY = sliderY + (SLIDER_HEIGHT - sliderBarHeight) / 2;\r
+
+      \  \r
+
+      \  // Draw background for slider area\r
+
+      \  push();\r
+
+      \  noStroke();\r
+
+      \  fill(30, 30, 30);\r
+
+      \  rect(0, sliderY, canvasW, SLIDER_HEIGHT);\r
+
+      \  \r
+
+      \  // Draw slider bar\r
+
+      \  fill(80, 80, 80);\r
+
+      \  rect(sliderBarX, sliderBarY, sliderBarWidth, sliderBarHeight, 3);\r
+
+      \  \r
+
+      \  // Calculate cursor position (0-100 maps to slider bar width)\r
+
+      \  const cursorX = sliderBarX + (sliderValue / 100) * sliderBarWidth;\r
+
+      \  const cursorWidth = 18;\r
+
+      \  const cursorHeight = 24;\r
+
+      \  const cursorY = sliderY + (SLIDER_HEIGHT - cursorHeight) / 2;\r
+
+      \  \r
+
+      \  // Draw cursor\r
+
+      \  fill(255, 255, 255);\r
+
+      \  stroke(100, 100, 100);\r
+
+      \  strokeWeight(1);\r
+
+      \  rect(cursorX - cursorWidth / 2, cursorY, cursorWidth, cursorHeight,
+      3);\r
+
+      \  \r
+
+      \  // Draw \"Speed: \" label before slider\r
+
+      \  textAlign(LEFT, CENTER);\r
+
+      \  textSize(20);\r
+
+      \  noStroke();\r
+
+      \  fill(200, 200, 200);\r
+
+      \  text(' Speed', 2, sliderY + SLIDER_HEIGHT / 2);\r
+
+      \  \r
+
+      \  // Draw speed icons\r
+
+      \  textSize(14);\r
+
+      \  fill(150, 150, 150);\r
+
+      \  \r
 
       \  pop();\r
 
@@ -2445,8 +2751,7 @@ files:
 
       \    line1 = 'TRAINING COMPLETE';\r
 
-      \    line3 = player.alive ? '' : `${PLAYER_CONFIG.id}
-      ${getDeathMessage(player.deathCause)}`;\r
+      \    line3 = 'Continue to the next lesson when you\\'re ready.';\r
 
       \  } else if (!player.alive && !enemy.alive) {\r
 
@@ -2660,17 +2965,7 @@ files:
 
       function bumpScore(n) {\r
 
-      \  const m = scoreEl;\r
-
-      \  if (!m) return;\r
-
-      \  const prev = Number(m.dataset.score || '0');\r
-
-      \  const curr = prev + n;\r
-
-      \  m.dataset.score = String(curr);\r
-
-      \  m.textContent = `${curr}`;\r
+      \  score += n;\r
 
       }\r
 
@@ -2678,11 +2973,7 @@ files:
 
       function updateSpeed() {\r
 
-      \  const sliderValue = parseInt(speedSlider.value); // 0-100\r
-
       \  const scale = calculateSpeedScale(sliderValue);\r
-
-      \  speedValue.textContent = `${scale.toFixed(1)}x`;\r
 
       \  \r
 
@@ -2702,25 +2993,25 @@ files:
 
       function calculateSpeedScale(sliderValue) {\r
 
-      \  // Slider: 0 (snail/slow) to 100 (rabbit/fast)\r
+      \  // Slider: 0 (left/1x speed) to 100 (right/fastest)\r
 
-      \  // Scale: high multiplier (slow) to low multiplier (fast)\r
+      \  // Scale: 1.0 (normal) to minScale (fastest - lowest ms value)\r
 
       \  \r
 
-      \  // Find the maximum possible scale for the slower snake (enemy)\r
+      \  // At 0: return 1.0 (normal speed)\r
 
-      \  const maxScale = SPEED_CONFIG.maxMs / SPEED_CONFIG.enemyBaseMs;\r
+      \  // At 100: return minScale (fastest speed)\r
 
       \  const minScale = SPEED_CONFIG.minMs / SPEED_CONFIG.playerBaseMs;\r
 
       \  \r
 
-      \  // Invert slider: 0 = fast (min scale), 100 = slow (max scale)\r
+      \  // Linear interpolation from 1.0 to minScale\r
 
-      \  const normalizedValue = (100 - sliderValue) / 100; // 0 to 1\r
+      \  const normalizedValue = sliderValue / 100; // 0 to 1\r
 
-      \  return minScale + (normalizedValue * (maxScale - minScale));\r
+      \  return 1.0 - (normalizedValue * (1.0 - minScale));\r
 
       }\r
 
@@ -2774,10 +3065,8 @@ files:
 
       function startNewGame(continueSeriesMode = false) {\r
 
-      \  // Calculate current speed scale from slider\r
-
-      \  const sliderValue = speedSlider ? parseInt(speedSlider.value) : 50; //
-      Default to middle\r
+      \  // Calculate current speed scale from slider (use internal
+      sliderValue)\r
 
       \  const scale = calculateSpeedScale(sliderValue);\r
 
@@ -2858,17 +3147,11 @@ files:
 
       \r
 
-      \  scoreEl.dataset.score = '0';\r
-
-      \  scoreEl.textContent = '0';\r
+      \  score = 0;\r
 
       \r
 
       \  initializeFoods();\r
-
-      \  updatePauseButton();\r
-
-      \  updateResetButton(); // Update button based on pre-round screen state\r
 
       \r
 
@@ -2887,8 +3170,6 @@ files:
 
       \    preRoundScreen = false;\r
 
-      \    updateResetButton();\r
-
       \    return;\r
 
       \  }\r
@@ -2898,8 +3179,6 @@ files:
       \  // Otherwise, reset the entire game\r
 
       \  startNewGame(false); // false = don't continue series, start fresh\r
-
-      \  // Button will be updated by startNewGame() -> updateResetButton()\r
 
       }\r
 
@@ -2928,8 +3207,6 @@ files:
 
       \  gamePaused = !gamePaused;\r
 
-      \  updatePauseButton();\r
-
       \  \r
 
       \  if (gamePaused) {\r
@@ -2939,61 +3216,6 @@ files:
       \  } else {\r
 
       \    loop();\r
-
-      \  }\r
-
-      }\r
-
-      \r
-
-      function updatePauseButton() {\r
-
-      \  const pauseEmoji = document.getElementById('pause-emoji');\r
-
-      \  const pauseLabel = document.getElementById('pause-label');\r
-
-      \  \r
-
-      \  if (gamePaused) {\r
-
-      \    pauseEmoji.textContent = '▶️';\r
-
-      \    pauseLabel.textContent = 'Resume';\r
-
-      \  } else {\r
-
-      \    pauseEmoji.textContent = '⏸️';\r
-
-      \    pauseLabel.textContent = 'Pause';\r
-
-      \  }\r
-
-      }\r
-
-      \r
-
-      function updateResetButton() {\r
-
-      \  const resetEmoji = document.querySelector('.reset-btn-emoji');\r
-
-      \  const resetLabel = document.querySelector('.reset-btn-label');\r
-
-      \  \r
-
-      \  // Show \"Start\" when on pre-round screen (rules screen), otherwise
-      \"Reset\"\r
-
-      \  if (preRoundScreen) {\r
-
-      \    resetEmoji.textContent = '▶️';\r
-
-      \    resetLabel.textContent = 'Start';\r
-
-      \  } else {\r
-
-      \    resetEmoji.textContent = '🔄';\r
-
-      \    resetLabel.textContent = 'Reset';\r
 
       \  }\r
 
@@ -3256,6 +3478,80 @@ files:
 
       \r
 
+      function mousePressed() {\r
+
+      \  // Check if mouse is in slider area\r
+
+      \  if (mouseY >= canvasH && mouseY <= canvasH + SLIDER_HEIGHT) {\r
+
+      \    isDraggingSlider = true;\r
+
+      \    updateSliderFromMouse();\r
+
+      \    return false; // Prevent default behavior\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function mouseDragged() {\r
+
+      \  if (isDraggingSlider) {\r
+
+      \    updateSliderFromMouse();\r
+
+      \    return false; // Prevent default behavior\r
+
+      \  }\r
+
+      }\r
+
+      \r
+
+      function mouseReleased() {\r
+
+      \  isDraggingSlider = false;\r
+
+      }\r
+
+      \r
+
+      function updateSliderFromMouse() {\r
+
+      \  const sliderMargin = 15;\r
+
+      \  const sliderBarWidth = canvasW - SLIDER_LEFT_OFFSET - sliderMargin;\r
+
+      \  const sliderBarX = SLIDER_LEFT_OFFSET;\r
+
+      \  \r
+
+      \  // Clamp mouse X to slider bounds\r
+
+      \  const clampedX = constrain(mouseX, sliderBarX, sliderBarX +
+      sliderBarWidth);\r
+
+      \  \r
+
+      \  // Calculate new slider value (0-100)\r
+
+      \  sliderValue = Math.round(((clampedX - sliderBarX) / sliderBarWidth) *
+      100);\r
+
+      \  sliderValue = constrain(sliderValue, 0, 100);\r
+
+      \  \r
+
+      \  // Update speed\r
+
+      \  updateSpeed();\r
+
+      }\r
+
+      \r
+
       function keyPressed() {\r
 
       \  if (key.toLowerCase() === 'r') {\r
@@ -3270,14 +3566,19 @@ files:
 
       \      preRoundScreen = false;\r
 
-      \      updateResetButton(); // Update button when leaving pre-round
-      screen\r
-
       \      return;\r
 
       \    }\r
 
-      \    continueGame();\r
+      \    if (gameOver && GAME_CONFIG.trainingMode) {\r
+
+      \      resetGame();\r
+
+      \    } else {\r
+
+      \      continueGame();\r
+
+      \    }\r
 
       \  } else if (key === ' ') {\r
 
@@ -3339,7 +3640,7 @@ files:
 
       \  }\r
 
-      }\r\n"
+      }"
   - path: course1/unit1/lesson1/lessonpart6/settings.js
     content: "// ------ Grid & Canvas ------\r
 
