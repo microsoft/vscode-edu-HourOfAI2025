@@ -6011,11 +6011,11 @@ files:
 
       \  cell: 20,\r
 
-      \  cols: 20,\r
+      \  cols: 18,\r
 
-      \  rows: 20,\r
+      \  rows: 18,\r
 
-      \  center: { x: Math.floor(20 / 2), y: Math.floor(20 / 2) }\r
+      \  center: { x: Math.floor(18 / 2), y: Math.floor(18 / 2) }\r
 
       };\r
 
