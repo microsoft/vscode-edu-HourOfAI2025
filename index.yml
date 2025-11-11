@@ -177,7 +177,7 @@ files:
       <!-- 🐍 COACH'S CORNER 🐍
           Write clear, simple instructions for SnakeBot to follow below.
           Then press the '▶' Run Prompt button in the top right of this window to turn your strategy into code!
-      WRITE PROMPT BELOW ⬇️ -->
+      WRITE PROMPT BELOW ⬇️ this line -->
   - path: course1/unit1/lesson1/lessonpart6/index.html
     content: "<!DOCTYPE html>\r
 
@@ -3688,7 +3688,7 @@ files:
       <!-- 🐍 COACH'S CORNER 🐍
           Write clear, simple instructions for SnakeBot to follow below.
           Then press the '▶' Run Prompt button in the top right of this window to turn your strategy into code!
-      WRITE PROMPT BELOW ⬇️ -->
+      WRITE PROMPT BELOW ⬇️ this line -->
   - path: course1/unit1/lesson1/lessonpart3/enemy-ai.js
     content: "function enemyAI(player) { \r
 
@@ -3940,7 +3940,7 @@ files:
       <!-- 🐍 COACH'S CORNER 🐍
           Write clear, simple instructions for SnakeBot to follow below.
           Then press the '▶' Run Prompt button in the top right of this window to turn your strategy into code!
-      WRITE PROMPT BELOW ⬇️ -->
+      WRITE PROMPT BELOW ⬇️ this line -->
   - path: course1/unit1/lesson1/lessonpart7/index.html
     content: "<!DOCTYPE html>\r
 
@@ -5698,7 +5698,7 @@ files:
       <!-- 🐍 COACH'S CORNER 🐍
           Write clear, simple instructions for SnakeBot to follow below.
           Then press the '▶' Run Prompt button in the top right of this window to turn your strategy into code!
-      WRITE PROMPT BELOW ⬇️ -->
+      WRITE PROMPT BELOW ⬇️ this line -->
   - path: course1/unit1/lesson1/lessonpart5/index.html
     content: "<!DOCTYPE html>\r
 
@@ -5922,7 +5922,7 @@ files:
       <!-- 🐍 COACH'S CORNER 🐍
           Write clear, simple instructions for SnakeBot to follow below.
           Then press the '▶' Run Prompt button in the top right of this window to turn your strategy into code!
-      WRITE PROMPT BELOW ⬇️ -->
+      WRITE PROMPT BELOW ⬇️ this line -->
   - path: course1/unit1/lesson1/lessonpart4/index.html
     content: "<!DOCTYPE html>\r
 
